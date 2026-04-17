@@ -1,6 +1,6 @@
 import React from 'react';
 import { AsciiOptions, DENSITY_MAPS } from '../types';
-import { Sliders, Monitor, Type, Palette } from 'lucide-react';
+import { Sliders, Monitor, Type, Palette, Zap } from 'lucide-react';
 import { playButtonSound } from '../utils/soundEffects';
 
 interface ControlPanelProps {
@@ -68,6 +68,23 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ options, setOptions 
             step="0.1" 
             value={options.contrast} 
             onChange={(e) => handleChange('contrast', Number(e.target.value))}
+            className="accent-green-500 h-1 bg-green-900 rounded-lg appearance-none cursor-pointer"
+          />
+        </div>
+
+        {/* Resolution */}
+        <div className="flex flex-col gap-1 w-32">
+           <div className="flex items-center gap-2 mb-1">
+             <Zap className="w-3 h-3" />
+             <label>RESOLUTION: {(options.resolution * 100).toFixed(0)}%</label>
+           </div>
+          <input 
+            type="range" 
+            min="0.05" 
+            max="1.0" 
+            step="0.05" 
+            value={options.resolution} 
+            onChange={(e) => handleChange('resolution', Number(e.target.value))}
             className="accent-green-500 h-1 bg-green-900 rounded-lg appearance-none cursor-pointer"
           />
         </div>
