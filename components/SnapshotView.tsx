@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Terminal, Share2, Home } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { Terminal, Share2, Home, Zap } from 'lucide-react';
+import { trackPH } from '../services/posthogService';
 
 export const SnapshotView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [content, setContent] = useState<string | null>(null);
+  const [settings, setSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -15,15 +18,23 @@ export const SnapshotView: React.FC = () => {
         if (!response.ok) throw new Error("Snapshot not found");
         const data = await response.json();
         setContent(data.content);
+        setSettings(data.settings);
+        
+        trackPH('view_snapshot', { id });
       } catch (err: any) {
         setError(err.message);
       } finally {
-        setLoading(err => false);
+        setLoading(false);
       }
     };
 
     if (id) fetchSnapshot();
   }, [id]);
+
+  const handleRemix = () => {
+    trackPH('remix_click', { id });
+    navigate(`/?remix=${id}`);
+  };
 
   if (loading) {
     return (
@@ -54,8 +65,14 @@ export const SnapshotView: React.FC = () => {
         </div>
         <div className="flex gap-4">
             <button 
+                onClick={handleRemix}
+                className="flex items-center gap-2 text-[10px] uppercase text-yellow-500 hover:text-white transition-colors bg-yellow-900/20 px-3 py-1 border border-yellow-500/30 rounded font-black shadow-[0_0_10px_rgba(234,179,8,0.1)] hover:shadow-[0_0_20px_rgba(234,179,8,0.2)]"
+            >
+                <Zap className="w-3 h-3 animate-pulse text-yellow-400" /> Remix This
+            </button>
+            <button 
                 onClick={() => navigator.clipboard.writeText(window.location.href)}
-                className="flex items-center gap-2 text-[10px] uppercase hover:text-white transition-colors"
+                className="flex items-center gap-2 text-[10px] uppercase hover:text-white transition-colors border border-green-500/20 px-3 py-1 rounded"
             >
                 <Share2 className="w-3 h-3" /> Copy Link
             </button>

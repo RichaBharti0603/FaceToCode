@@ -1,20 +1,23 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { AsciiCanvas } from './components/AsciiCanvas';
 import { ControlPanel } from './components/ControlPanel';
 import { AnalysisModal } from './components/AnalysisModal';
 import { AsciiOptions, AnalysisResult } from './types';
 import { AppState, CameraDevice } from './core/types';
 import { analyzeImage } from './services/geminiService';
-import { Camera, Terminal, Zap, ScanEye, Archive } from 'lucide-react';
+import { Routes, Route, Link, useSearchParams } from 'react-router-dom';
+import { SnapshotView } from './components/SnapshotView';
+import { Dashboard } from './components/Dashboard';
+import { ExploreGallery } from './components/ExploreGallery';
+import { Camera, Terminal, Zap, ScanEye, Archive, Compass } from 'lucide-react';
 import { playAnalysisStartSound, playAnalysisCompleteSound } from './utils/soundEffects';
 import { LandingScreen } from './components/LandingScreen';
 import { trackEvent } from './services/analyticsService';
-import { Routes, Route, Link } from 'react-router-dom';
-import { SnapshotView } from './components/SnapshotView';
-import { Dashboard } from './components/Dashboard';
+import { initPostHog } from './services/posthogService';
 
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>('landing');
+  const [searchParams, setSearchParams] = useSearchParams();
   const [initError, setInitError] = useState<string | null>(null);
 
   const [options, setOptions] = useState<AsciiOptions>({
@@ -33,6 +36,39 @@ const App: React.FC = () => {
   const [cameras, setCameras] = useState<CameraDevice[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string | undefined>(undefined);
   
+  // Init Analytics
+  useEffect(() => {
+    initPostHog();
+  }, []);
+
+  // Handle Remix Detection
+  useEffect(() => {
+    const remixId = searchParams.get('remix');
+    if (remixId) {
+      const fetchRemix = async () => {
+        try {
+          const response = await fetch(`/api/snapshot?id=${remixId}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.settings) {
+              setOptions(prev => ({ ...prev, ...data.settings }));
+              // Clear param to avoid re-triggering
+              setParamsWithoutReload({ ...Object.fromEntries(searchParams) }); 
+            }
+          }
+        } catch (e) {
+          console.error("Remix sync failed:", e);
+        }
+      };
+      fetchRemix();
+    }
+    
+    function setParamsWithoutReload(params: any) {
+       delete params.remix;
+       setSearchParams(params, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
   // Feature Gating State
   const [isUnlocked, setIsUnlocked] = useState(() => {
     return localStorage.getItem('ascii_pro_unlocked') === 'true';
@@ -80,6 +116,7 @@ const App: React.FC = () => {
     <Routes>
       <Route path="/s/:id" element={<SnapshotView />} />
       <Route path="/my" element={<Dashboard />} />
+      <Route path="/explore" element={<ExploreGallery />} />
       <Route path="/" element={
         <div className="relative w-full h-screen bg-black overflow-hidden flex flex-col">
           {appState !== 'active' ? (
@@ -97,6 +134,9 @@ const App: React.FC = () => {
                   <h1 className="text-xl font-bold tracking-widest uppercase">FaceToCode<span className="text-xs ml-1 opacity-70 italic">v2.0</span></h1>
                 </div>
                 <div className="flex items-center gap-6 pointer-events-auto">
+                    <Link to="/explore" className="flex items-center gap-2 text-green-500 hover:text-green-300 text-[10px] uppercase font-bold tracking-widest transition-colors">
+                        <Compass className="w-3 h-3" /> Explore Community
+                    </Link>
                     <Link to="/my" className="flex items-center gap-2 text-green-600 hover:text-green-400 text-[10px] uppercase font-bold tracking-widest transition-colors">
                         <Archive className="w-3 h-3" /> My Archives
                     </Link>

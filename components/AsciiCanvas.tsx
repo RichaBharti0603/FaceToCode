@@ -3,10 +3,11 @@ import { AsciiOptions } from '../types';
 import { AsciiEngine } from '../core/AsciiEngine';
 import { CameraDevice } from '../core/types';
 import { playStartupSound, playScanSound, startAmbientHum, stopAmbientHum, playAnalysisStartSound, playAnalysisCompleteSound } from '../utils/soundEffects';
-import { ScanEye, Camera, Circle, Brain, Share2 } from 'lucide-react';
+import { ScanEye, Camera, Circle, Brain, Share2, Globe, Lock } from 'lucide-react';
 import { CaptionOverlay } from './CaptionOverlay';
 import { detectEmotion } from '../services/geminiService';
 import { trackEvent } from '../services/analyticsService';
+import { trackPH } from '../services/posthogService';
 import { AsciiFrame } from '../core/types';
 import { getOrInitializeUserId } from '../utils/identity';
 
@@ -33,6 +34,7 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({
   const latestFrameRef = useRef<AsciiFrame | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [isPublic, setIsPublic] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   // Emotion Detection Loop
@@ -219,7 +221,9 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({
         body: JSON.stringify({ 
           content: asciiString,
           user_id: userId,
-          preview_image: previewImage
+          preview_image: previewImage,
+          settings: options,
+          is_public: isPublic
         })
       });
 
@@ -233,6 +237,7 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({
       
       // Track session event
       trackEvent('snapshot_shared', { id, userId });
+      trackPH('snapshot_shared', { id, userId, isPublic, mode: options.colorMode });
     } catch (err) {
       alert("CRITICAL ERROR: DATA PERSISTENCE FAILED.");
       console.error(err);
@@ -270,15 +275,27 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({
           <Camera className="w-6 h-6" />
         </button>
 
-        {/* Share Snapshot (NEW) */}
-        <button 
-          onClick={handleShareSnapshot}
-          disabled={isSharing}
-          className={`bg-black/60 ${isSharing ? 'text-yellow-500 animate-pulse' : 'text-yellow-400'} border border-yellow-500/50 p-4 rounded-full backdrop-blur-md transition-all active:scale-95 hover:scale-105 hover:shadow-[0_0_15px_rgba(255,200,0,0.3)]`}
-          title="Generate Share Link"
-        >
-          <Share2 className={`w-6 h-6 ${isSharing ? 'animate-bounce' : ''}`} />
-        </button>
+        {/* Share Snapshot */}
+        <div className="flex flex-col items-center gap-2">
+            <button 
+              onClick={handleShareSnapshot}
+              disabled={isSharing}
+              className={`bg-black/60 ${isSharing ? 'text-yellow-500 animate-pulse' : 'text-yellow-400'} border border-yellow-500/50 p-4 rounded-full backdrop-blur-md transition-all active:scale-95 hover:scale-105 hover:shadow-[0_0_15px_rgba(255,200,0,0.3)]`}
+              title="Generate Share Link"
+            >
+              <Share2 className={`w-6 h-6 ${isSharing ? 'animate-bounce' : ''}`} />
+            </button>
+            <button 
+                onClick={() => {
+                    setIsPublic(!isPublic);
+                    trackPH('privacy_toggle', { isPublic: !isPublic });
+                }}
+                className={`flex items-center gap-1 text-[8px] uppercase font-black px-2 py-0.5 rounded border transition-all ${isPublic ? 'text-green-500 border-green-500/30 bg-green-500/10' : 'text-red-500 border-red-500/30 bg-red-500/10'}`}
+            >
+                {isPublic ? <Globe className="w-2 h-2" /> : <Lock className="w-2 h-2" />}
+                {isPublic ? 'Public' : 'Private'}
+            </button>
+        </div>
 
         {/* Scan & Analyze Button (Primary) */}
         <button 

@@ -15,10 +15,23 @@ export default async function handler(req: any, res: any) {
     return res.status(200).end();
   }
 
-  const { id, userId } = req.query;
+  const { id, userId, explore } = req.query;
 
   if (req.method === 'GET') {
-    // Mode A: Fetch User's Snapshots
+    // Mode A: Fetch Community Explore (Latest 50 Public)
+    if (explore === 'true') {
+      const { data, error } = await supabase
+        .from('snapshots')
+        .select('id, preview_url, created_at')
+        .eq('is_public', true)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) return res.status(500).json({ error: 'Explore datastream failed' });
+      return res.status(200).json(data);
+    }
+
+    // Mode B: Fetch User's Snapshots
     if (userId) {
       const { data, error } = await supabase
         .from('snapshots')
@@ -30,12 +43,12 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json(data);
     }
 
-    // Mode B: Fetch Single Snapshot
+    // Mode C: Fetch Single Snapshot
     if (!id) return res.status(400).json({ error: 'Missing parameters' });
 
     const { data, error } = await supabase
       .from('snapshots')
-      .select('content, preview_url')
+      .select('content, preview_url, settings')
       .eq('id', id)
       .single();
 
@@ -44,7 +57,7 @@ export default async function handler(req: any, res: any) {
   }
 
   if (req.method === 'POST') {
-    const { content, user_id, preview_image } = req.body;
+    const { content, user_id, preview_image, settings, is_public } = req.body;
     if (!content) return res.status(400).json({ error: 'Missing content' });
 
     const newId = Math.random().toString(36).substring(2, 10);
@@ -83,7 +96,9 @@ export default async function handler(req: any, res: any) {
         id: newId, 
         content, 
         user_id: user_id || null,
-        preview_url: preview_url
+        preview_url: preview_url,
+        settings: settings || {},
+        is_public: is_public !== false // Default to public
       }]);
 
     if (error) return res.status(500).json({ error: 'Save failed' });
