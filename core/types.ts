@@ -1,15 +1,22 @@
-import { AsciiOptions } from './types';
+import { AsciiOptions } from '../types';
 
-export interface ProcessedFrame {
-  chars: string[];      // Flat array of strings (one per row)
-  gridWidth: number;    // Number of columns in character grid
-  gridHeight: number;   // Number of rows in character grid
-  pixelData: Uint8ClampedArray; // Downsampled pixel data for colors/analysis
-}
+export type AsciiFrame = {
+  chars: string[][];
+  width: number;
+  height: number;
+  brightness: Float32Array;
+  colors?: Uint8ClampedArray;
+};
 
 export type RendererMode = 'canvas' | 'webgl';
 
+export interface CameraDevice {
+  deviceId: string;
+  label: string;
+}
+
 export interface EngineEvents {
-  onFrame: (frame: ProcessedFrame) => void;
+  onFrame: (frame: AsciiFrame) => void;
   onStateChange: (state: 'idle' | 'running' | 'error') => void;
+  onCamerasDiscovered: (cameras: CameraDevice[]) => void;
 }

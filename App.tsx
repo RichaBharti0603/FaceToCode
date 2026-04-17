@@ -3,6 +3,7 @@ import { AsciiCanvas } from './components/AsciiCanvas';
 import { ControlPanel } from './components/ControlPanel';
 import { AnalysisModal } from './components/AnalysisModal';
 import { AsciiOptions, AnalysisResult } from './types';
+import { CameraDevice } from './core/types';
 import { analyzeImage } from './services/geminiService';
 import { Camera, Terminal, Zap, ScanEye } from 'lucide-react';
 import { playAnalysisStartSound, playAnalysisCompleteSound } from './utils/soundEffects';
@@ -14,12 +15,18 @@ const App: React.FC = () => {
     contrast: 1.0,
     colorMode: 'matrix',
     density: 'complex',
-    resolution: 0.2, // Factor of window size
+    resolution: 0.15, // Default resolution factor
   });
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [cameras, setCameras] = useState<CameraDevice[]>([]);
+  const [selectedCameraId, setSelectedCameraId] = useState<string | undefined>(undefined);
+  
+  // Feature Gating State
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [isHDEnabled, setIsHDEnabled] = useState(false);
 
   const handleCapture = useCallback(async (imageData: string) => {
     setIsAnalyzing(true);
@@ -49,22 +56,39 @@ const App: React.FC = () => {
       <header className="absolute top-0 left-0 w-full p-4 z-20 flex justify-between items-center pointer-events-none bg-gradient-to-b from-black/80 to-transparent">
         <div className="flex items-center gap-2 text-green-500 pointer-events-auto">
           <Terminal className="w-6 h-6 animate-pulse" />
-          <h1 className="text-xl font-bold tracking-widest uppercase">CyberAscii<span className="text-xs ml-1 opacity-70">v1.0</span></h1>
+          <h1 className="text-xl font-bold tracking-widest uppercase">CyberAscii<span className="text-xs ml-1 opacity-70">v1.1</span></h1>
         </div>
         <div className="text-green-800 text-xs flex gap-4 font-mono">
           <span>SYS.STATUS: ONLINE</span>
-          <span>CAM.FEED: ACTIVE</span>
-          <span className="animate-pulse">REC ●</span>
+          <span>CAM.FEED: {selectedCameraId ? 'TRACKING' : 'ACTIVE'}</span>
+          <span className="animate-pulse">LATENCY: {(Math.random() * 50).toFixed(1)}ms</span>
         </div>
       </header>
 
       {/* Main Canvas Area */}
       <main className="flex-grow relative z-10">
-        <AsciiCanvas options={options} onCapture={handleCapture} />
+        <AsciiCanvas 
+          options={options} 
+          onCapture={handleCapture} 
+          onCamerasDiscovered={setCameras}
+          selectedCameraId={selectedCameraId}
+          isUnlocked={isUnlocked}
+          isHDEnabled={isHDEnabled}
+        />
       </main>
 
       {/* Controls */}
-      <ControlPanel options={options} setOptions={setOptions} />
+      <ControlPanel 
+        options={options} 
+        setOptions={setOptions} 
+        cameras={cameras} 
+        selectedCameraId={selectedCameraId}
+        onSelectCamera={setSelectedCameraId}
+        isUnlocked={isUnlocked}
+        onUnlock={() => setIsUnlocked(true)}
+        isHDEnabled={isHDEnabled}
+        setIsHDEnabled={setIsHDEnabled}
+      />
 
       {/* Loading/Analysis Modal */}
       {isModalOpen && (
@@ -82,4 +106,4 @@ const App: React.FC = () => {
   );
 };
 
-export default App;
+export default App;

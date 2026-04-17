@@ -1,18 +1,36 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { AsciiOptions } from '../types';
 import { AsciiEngine } from '../core/AsciiEngine';
-import { playStartupSound, playScanSound, startAmbientHum, stopAmbientHum } from '../utils/soundEffects';
-import { ScanEye, Camera, Circle } from 'lucide-react';
+import { CameraDevice } from '../core/types';
+import { playStartupSound, playScanSound, startAmbientHum, stopAmbientHum, playAnalysisStartSound, playAnalysisCompleteSound } from '../utils/soundEffects';
+import { ScanEye, Camera, Circle, Brain } from 'lucide-react';
+import { CaptionOverlay } from './CaptionOverlay';
 
 interface AsciiCanvasProps {
   options: AsciiOptions;
   onCapture: (imageData: string) => void;
+  onCamerasDiscovered?: (cameras: CameraDevice[]) => void;
+  selectedCameraId?: string;
+  isUnlocked: boolean;
+  isHDEnabled: boolean;
 }
 
-export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({ options, onCapture }) => {
+export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({ 
+  options, 
+  onCapture, 
+  onCamerasDiscovered,
+  selectedCameraId,
+  isUnlocked,
+  isHDEnabled
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // AI Caption State
+  const [caption, setCaption] = useState<string>('');
+  const [isAnalyzingCaption, setIsAnalyzingCaption] = useState(false);
+  const [showCaption, setShowCaption] = useState(false);
 
   // Initialize Engine
   const engine = useMemo(() => new AsciiEngine(options, {
@@ -24,6 +42,9 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({ options, onCapture }) 
         playStartupSound();
         startAmbientHum();
       }
+    },
+    onCamerasDiscovered: (cameras) => {
+      onCamerasDiscovered?.(cameras);
     }
   }), []);
 
@@ -31,6 +52,13 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({ options, onCapture }) 
   useEffect(() => {
     engine.updateOptions(options);
   }, [options, engine]);
+
+  // Handle Camera Switch
+  useEffect(() => {
+    if (selectedCameraId) {
+      engine.setCamera(selectedCameraId);
+    }
+  }, [selectedCameraId, engine]);
 
   // Lifecycle
   useEffect(() => {
@@ -85,8 +113,39 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({ options, onCapture }) 
       engine.stopRecording();
       setIsRecording(false);
     } else {
-      engine.startRecording();
+      const recordOptions = isHDEnabled ? {
+        width: 1080,
+        height: 1920,
+        fps: 30,
+        isUnlocked: isUnlocked
+      } : {
+        isUnlocked: isUnlocked
+      };
+      
+      engine.startRecording(recordOptions);
       setIsRecording(true);
+    }
+  };
+
+  const handleAnalyzeFeed = async () => {
+    if (isAnalyzingCaption) return;
+    
+    setIsAnalyzingCaption(true);
+    setShowCaption(true);
+    setCaption("INITIALIZING NEURAL LINK... ANALYZING VISUAL BUFFER...");
+    playAnalysisStartSound();
+    
+    try {
+      const result = await engine.getCaption();
+      setCaption(result.description);
+      playAnalysisCompleteSound();
+      
+      // Auto-hide after 10 seconds
+      setTimeout(() => setShowCaption(false), 10000);
+    } catch (err) {
+      setCaption("ANALYSIS ERROR: UNABLE TO DECODE VISUAL SIGNALS.");
+    } finally {
+      setIsAnalyzingCaption(false);
     }
   };
 
@@ -129,15 +188,26 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({ options, onCapture }) 
           <ScanEye className="w-8 h-8" />
         </button>
 
+        {/* AI Caption Button */}
+        <button 
+          onClick={handleAnalyzeFeed}
+          className={`bg-black/60 ${isAnalyzingCaption ? 'text-blue-400 border-blue-500/50' : 'text-blue-500 border-blue-500/50'} border p-4 rounded-full backdrop-blur-md transition-all active:scale-95 hover:scale-105 hover:shadow-[0_0_15px_rgba(0,100,255,0.3)]`}
+          title="Intelligence Assessment"
+        >
+          <Brain className={`w-6 h-6 ${isAnalyzingCaption ? 'animate-pulse' : ''}`} />
+        </button>
+
         {/* Video Record Button */}
         <button 
           onClick={toggleRecording}
           className={`bg-black/60 ${isRecording ? 'text-red-500 border-red-500/50 animate-pulse' : 'text-green-400 border-green-500/50'} border p-4 rounded-full backdrop-blur-md transition-all active:scale-95 hover:scale-105 hover:shadow-[0_0_15px_rgba(255,0,0,0.3)]`}
-          title={isRecording ? "Stop Recording" : "Start Recording"}
+          title={isRecording ? "Stop Recording" : (isHDEnabled ? "Record HD Video" : "Record Video")}
         >
           <Circle className={`w-6 h-6 ${isRecording ? 'fill-red-500' : ''}`} />
         </button>
       </div>
+
+      <CaptionOverlay caption={caption} isVisible={showCaption} />
     </div>
   );
 };

@@ -3,7 +3,7 @@ export interface AsciiOptions {
   brightness: number;
   contrast: number;
   colorMode: 'matrix' | 'bw' | 'color' | 'retro';
-  density: 'simple' | 'complex' | 'binary' | 'blocks';
+  density: 'simple' | 'complex' | 'binary' | 'blocks' | 'matrix';
   resolution: number; // Downscaling factor (0.1 - 1.0)
 }
 
@@ -20,4 +20,5 @@ export const DENSITY_MAPS = {
   complex: " .^!*<&%$#@", 
   binary: " 01",
   blocks: " ░▒▓█",
+  matrix: "01", // Binary charset as requested
 };

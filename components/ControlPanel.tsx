@@ -1,14 +1,32 @@
 import React from 'react';
 import { AsciiOptions, DENSITY_MAPS } from '../types';
-import { Sliders, Monitor, Type, Palette, Zap } from 'lucide-react';
+import { CameraDevice } from '../core/types';
+import { Sliders, Monitor, Type, Palette, Zap, Camera } from 'lucide-react';
 import { playButtonSound } from '../utils/soundEffects';
 
 interface ControlPanelProps {
   options: AsciiOptions;
   setOptions: React.Dispatch<React.SetStateAction<AsciiOptions>>;
+  cameras: CameraDevice[];
+  selectedCameraId?: string;
+  onSelectCamera: (id: string) => void;
+  isUnlocked: boolean;
+  onUnlock: () => void;
+  isHDEnabled: boolean;
+  setIsHDEnabled: (enabled: boolean) => void;
 }
 
-export const ControlPanel: React.FC<ControlPanelProps> = ({ options, setOptions }) => {
+export const ControlPanel: React.FC<ControlPanelProps> = ({ 
+  options, 
+  setOptions,
+  cameras,
+  selectedCameraId,
+  onSelectCamera,
+  isUnlocked,
+  onUnlock,
+  isHDEnabled,
+  setIsHDEnabled
+}) => {
   const handleChange = (key: keyof AsciiOptions, value: any) => {
     setOptions(prev => ({ ...prev, [key]: value }));
   };
@@ -20,54 +38,44 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ options, setOptions 
 
   return (
     <div className="absolute bottom-0 w-full bg-black/80 border-t border-green-900/50 backdrop-blur-sm p-4 z-30 transition-all duration-300">
-      <div className="max-w-6xl mx-auto flex flex-wrap gap-6 justify-center items-center text-green-500 text-xs font-mono">
+      <div className="max-w-6xl mx-auto flex flex-wrap gap-8 justify-center items-center text-green-500 text-xs font-mono">
         
+        {/* Camera Selector */}
+        {cameras.length > 0 && (
+          <div className="flex flex-col gap-1 w-32">
+            <div className="flex items-center gap-2 mb-1">
+               <Camera className="w-3 h-3" />
+               <label>FEED SRC</label>
+            </div>
+            <select 
+              value={selectedCameraId || (cameras[0]?.deviceId)}
+              onChange={(e) => {
+                playButtonSound();
+                onSelectCamera(e.target.value);
+              }}
+              className="bg-black border border-green-800 text-[10px] p-1 text-green-500 focus:border-green-500 outline-none"
+            >
+              {cameras.map(cam => (
+                <option key={cam.deviceId} value={cam.deviceId}>
+                  {cam.label.length > 15 ? cam.label.slice(0, 15) + '...' : cam.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Font Size */}
         <div className="flex flex-col gap-1 w-32">
           <div className="flex items-center gap-2 mb-1">
              <Type className="w-3 h-3" />
-             <label>FONT SIZE: {options.fontSize}px</label>
+             <label>GLYPH SIZE: {options.fontSize}px</label>
           </div>
           <input 
             type="range" 
-            min="6" 
-            max="24" 
+            min="4" 
+            max="32" 
             value={options.fontSize} 
             onChange={(e) => handleChange('fontSize', Number(e.target.value))}
-            className="accent-green-500 h-1 bg-green-900 rounded-lg appearance-none cursor-pointer"
-          />
-        </div>
-
-        {/* Brightness */}
-        <div className="flex flex-col gap-1 w-32">
-           <div className="flex items-center gap-2 mb-1">
-             <Sliders className="w-3 h-3" />
-             <label>GAIN: {options.brightness.toFixed(1)}</label>
-           </div>
-          <input 
-            type="range" 
-            min="0.5" 
-            max="2.0" 
-            step="0.1" 
-            value={options.brightness} 
-            onChange={(e) => handleChange('brightness', Number(e.target.value))}
-            className="accent-green-500 h-1 bg-green-900 rounded-lg appearance-none cursor-pointer"
-          />
-        </div>
-
-        {/* Contrast */}
-        <div className="flex flex-col gap-1 w-32">
-           <div className="flex items-center gap-2 mb-1">
-             <Monitor className="w-3 h-3" />
-             <label>CONTRAST: {options.contrast.toFixed(1)}</label>
-           </div>
-          <input 
-            type="range" 
-            min="0.5" 
-            max="3.0" 
-            step="0.1" 
-            value={options.contrast} 
-            onChange={(e) => handleChange('contrast', Number(e.target.value))}
             className="accent-green-500 h-1 bg-green-900 rounded-lg appearance-none cursor-pointer"
           />
         </div>
@@ -76,15 +84,32 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ options, setOptions 
         <div className="flex flex-col gap-1 w-32">
            <div className="flex items-center gap-2 mb-1">
              <Zap className="w-3 h-3" />
-             <label>RESOLUTION: {(options.resolution * 100).toFixed(0)}%</label>
+             <label>GRID DENSITY: {(options.resolution * 100).toFixed(0)}%</label>
            </div>
           <input 
             type="range" 
-            min="0.05" 
-            max="1.0" 
-            step="0.05" 
+            min="0.02" 
+            max="0.5" 
+            step="0.01" 
             value={options.resolution} 
             onChange={(e) => handleChange('resolution', Number(e.target.value))}
+            className="accent-green-500 h-1 bg-green-900 rounded-lg appearance-none cursor-pointer"
+          />
+        </div>
+
+        {/* Brightness/Gain */}
+        <div className="flex flex-col gap-1 w-24">
+           <div className="flex items-center gap-2 mb-1">
+             <Sliders className="w-3 h-3" />
+             <label>GAIN: {options.brightness.toFixed(1)}</label>
+           </div>
+          <input 
+            type="range" 
+            min="0.5" 
+            max="2.5" 
+            step="0.1" 
+            value={options.brightness} 
+            onChange={(e) => handleChange('brightness', Number(e.target.value))}
             className="accent-green-500 h-1 bg-green-900 rounded-lg appearance-none cursor-pointer"
           />
         </div>
@@ -93,7 +118,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ options, setOptions 
         <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
                 <Palette className="w-3 h-3" />
-                <span>MODE</span>
+                <span>CHROMA</span>
             </div>
             <div className="flex gap-1">
                 {(['matrix', 'bw', 'retro', 'color'] as const).map(mode => (
@@ -102,16 +127,16 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ options, setOptions 
                         onClick={() => handleModeChange('colorMode', mode)}
                         className={`px-2 py-1 border ${options.colorMode === mode ? 'bg-green-500 text-black border-green-500' : 'bg-transparent border-green-800 text-green-700 hover:border-green-500'} text-[10px] uppercase transition-colors`}
                     >
-                        {mode}
+                        {mode === 'color' ? 'RGB' : mode}
                     </button>
                 ))}
             </div>
         </div>
 
-        {/* Density Map */}
+        {/* Density Map (Charset) */}
         <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
-                <Type className="w-3 h-3" />
+                <Monitor className="w-3 h-3" />
                 <span>CHARSET</span>
             </div>
             <div className="flex gap-1">
@@ -127,7 +152,38 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ options, setOptions 
             </div>
         </div>
 
+        {/* Feature Gating: HD Mode & Pro Unlock */}
+        <div className="flex gap-6 border-l border-green-900/30 pl-8">
+            <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                    <Zap className={`w-3 h-3 ${isHDEnabled ? 'text-yellow-400' : ''}`} />
+                    <span>HD MODE</span>
+                </div>
+                <button
+                    onClick={() => setIsHDEnabled(!isHDEnabled)}
+                    className={`px-3 py-1 border ${isHDEnabled ? 'bg-yellow-500 text-black border-yellow-500' : 'bg-transparent border-green-800 text-green-700'} text-[10px] uppercase font-bold transition-all`}
+                >
+                    {isHDEnabled ? '1080P ACTIVE' : 'STANDARD'}
+                </button>
+            </div>
+
+            {!isUnlocked && (
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 text-white/50">
+                        <Zap className="w-3 h-3 group-hover:text-yellow-400" />
+                        <span>PREMIUM</span>
+                    </div>
+                    <button
+                        onClick={onUnlock}
+                        className="px-4 py-1 bg-gradient-to-r from-yellow-600 to-yellow-400 text-black text-[10px] font-black uppercase tracking-tighter hover:scale-105 transition-transform shadow-[0_0_10px_rgba(234,179,8,0.3)]"
+                    >
+                        Unlock Pro (One-Off)
+                    </button>
+                </div>
+            )}
+        </div>
+
       </div>
     </div>
   );
-};
+};
