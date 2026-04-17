@@ -5,6 +5,7 @@ export interface AsciiOptions {
   colorMode: 'matrix' | 'bw' | 'color' | 'retro';
   density: 'simple' | 'complex' | 'binary' | 'blocks' | 'matrix';
   resolution: number; // Downscaling factor (0.1 - 1.0)
+  autoEmotion?: boolean;
 }
 
 export interface AnalysisResult {

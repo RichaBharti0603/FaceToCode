@@ -60,4 +60,30 @@ export const analyzeImage = async (base64Image: string): Promise<AnalysisResult>
       tags: ["ERROR", "NO_DATA"]
     };
   }
+export const detectEmotion = async (base64Image: string): Promise<'happy' | 'neutral' | 'serious'> => {
+  try {
+    const ai = getClient();
+    const cleanBase64 = base64Image.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
+
+    const prompt = "Identify the dominant facial expression from this image. Options: happy, neutral, serious. Respond only with one single word.";
+
+    const result = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: {
+        parts: [
+          { inlineData: { mimeType: 'image/png', data: cleanBase64 } },
+          { text: prompt }
+        ]
+      }
+    });
+
+    const emotion = result.text.trim().toLowerCase();
+    if (emotion.includes('happy')) return 'happy';
+    if (emotion.includes('serious')) return 'serious';
+    return 'neutral';
+
+  } catch (error) {
+    console.error("Emotion detection error:", error);
+    return 'neutral';
+  }
 };

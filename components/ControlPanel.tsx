@@ -1,8 +1,10 @@
 import React from 'react';
 import { AsciiOptions, DENSITY_MAPS } from '../types';
 import { CameraDevice } from '../core/types';
-import { Sliders, Monitor, Type, Palette, Zap, Camera } from 'lucide-react';
+import { Sliders, Monitor, Type, Palette, Zap, Camera, Brain } from 'lucide-react';
 import { playButtonSound } from '../utils/soundEffects';
+import { initiateProCheckout } from '../services/paymentService';
+import { trackEvent } from '../services/analyticsService';
 
 interface ControlPanelProps {
   options: AsciiOptions;
@@ -34,7 +36,12 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
   const handleModeChange = (key: keyof AsciiOptions, value: any) => {
       playButtonSound();
       handleChange(key, value);
+      if (key === 'colorMode') trackEvent('emotion_mode_toggle', { mode: value });
   }
+
+  const handleUnlockClick = () => {
+    initiateProCheckout(onUnlock);
+  };
 
   return (
     <div className="absolute bottom-0 w-full bg-black/80 border-t border-green-900/50 backdrop-blur-sm p-4 z-30 transition-all duration-300">
@@ -133,7 +140,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
             </div>
         </div>
 
-        {/* Density Map (Charset) */}
+        {/* Diversity Map (Charset) */}
         <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
                 <Monitor className="w-3 h-3" />
@@ -150,6 +157,20 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                     </button>
                 ))}
             </div>
+        </div>
+
+        {/* Emotion Sync Toggle */}
+        <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+                <Brain className={`w-3 h-3 ${options.autoEmotion ? 'text-blue-400' : ''}`} />
+                <span>EMOTION SYNC</span>
+            </div>
+            <button
+                onClick={() => handleChange('autoEmotion', !options.autoEmotion)}
+                className={`px-3 py-1 border ${options.autoEmotion ? 'bg-blue-500 text-black border-blue-500' : 'bg-transparent border-green-800 text-green-700'} text-[10px] uppercase font-bold transition-all`}
+            >
+                {options.autoEmotion ? 'AUTO-MODE: ON' : 'MANUAL'}
+            </button>
         </div>
 
         {/* Feature Gating: HD Mode & Pro Unlock */}
@@ -174,7 +195,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                         <span>PREMIUM</span>
                     </div>
                     <button
-                        onClick={onUnlock}
+                        onClick={handleUnlockClick}
                         className="px-4 py-1 bg-gradient-to-r from-yellow-600 to-yellow-400 text-black text-[10px] font-black uppercase tracking-tighter hover:scale-105 transition-transform shadow-[0_0_10px_rgba(234,179,8,0.3)]"
                     >
                         Unlock Pro (One-Off)

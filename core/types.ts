@@ -15,6 +15,8 @@ export interface CameraDevice {
   label: string;
 }
 
+export type AppState = 'landing' | 'initializing' | 'active' | 'error';
+
 export interface EngineEvents {
   onFrame: (frame: AsciiFrame) => void;
   onStateChange: (state: 'idle' | 'running' | 'error') => void;

@@ -5,9 +5,12 @@ import { CameraDevice } from '../core/types';
 import { playStartupSound, playScanSound, startAmbientHum, stopAmbientHum, playAnalysisStartSound, playAnalysisCompleteSound } from '../utils/soundEffects';
 import { ScanEye, Camera, Circle, Brain } from 'lucide-react';
 import { CaptionOverlay } from './CaptionOverlay';
+import { detectEmotion } from '../services/geminiService';
+import { trackEvent } from '../services/analyticsService';
 
 interface AsciiCanvasProps {
   options: AsciiOptions;
+  setOptions?: React.Dispatch<React.SetStateAction<AsciiOptions>>;
   onCapture: (imageData: string) => void;
   onCamerasDiscovered?: (cameras: CameraDevice[]) => void;
   selectedCameraId?: string;
@@ -17,6 +20,7 @@ interface AsciiCanvasProps {
 
 export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({ 
   options, 
+  setOptions,
   onCapture, 
   onCamerasDiscovered,
   selectedCameraId,
@@ -26,6 +30,42 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Emotion Detection Loop
+  useEffect(() => {
+    if (!options.autoEmotion || !setOptions) return;
+
+    const interval = setInterval(async () => {
+      if (canvasRef.current) {
+        // Fast, low-res capture for heartbeat
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = 160;
+        tempCanvas.height = 120;
+        const ctx = tempCanvas.getContext('2d');
+        if (!ctx) return;
+        
+        ctx.drawImage(canvasRef.current, 0, 0, 160, 120);
+        const thumb = tempCanvas.toDataURL('image/jpeg', 0.6);
+        
+        try {
+          const emotion = await detectEmotion(thumb);
+          const modeMap: Record<string, 'color' | 'matrix' | 'bw'> = {
+            happy: 'color',
+            serious: 'matrix',
+            neutral: 'bw',
+          };
+          
+          if (modeMap[emotion]) {
+             setOptions(prev => ({ ...prev, colorMode: modeMap[emotion] }));
+          }
+        } catch (err) {
+          console.error("Emotion heartbeat failed:", err);
+        }
+      }
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, [options.autoEmotion, setOptions]);
   
   // AI Caption State
   const [caption, setCaption] = useState<string>('');
@@ -98,6 +138,7 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({
   const handleScreenshotClick = () => {
     if (canvasRef.current) {
       playScanSound();
+      trackEvent('screenshot_taken');
       const dataUrl = canvasRef.current.toDataURL('image/png');
       const link = document.createElement('a');
       link.href = dataUrl;
@@ -112,7 +153,9 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({
     if (isRecording) {
       engine.stopRecording();
       setIsRecording(false);
+      trackEvent('recording_stop');
     } else {
+      trackEvent('recording_start', { isHD: isHDEnabled });
       const recordOptions = isHDEnabled ? {
         width: 1080,
         height: 1920,
