@@ -33,6 +33,17 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 text-slate-900 font-sans p-6 md:p-12 overflow-x-hidden">
+      {/* Back Navigation */}
+      <div className="max-w-6xl mx-auto mb-12 px-4">
+        <Link 
+          to="/" 
+          className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 hover:text-pink-500 transition-colors group"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          Camera
+        </Link>
+      </div>
+
       {/* Header */}
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-16 px-4">
         <div>

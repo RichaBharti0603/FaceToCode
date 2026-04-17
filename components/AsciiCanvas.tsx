@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useMemo, forwardRef, useImperativeHandle } from 'react';
-import { AsciiOptions } from '../types';
+import { AsciiOptions, AdminConfig } from '../types';
 import { AsciiEngine } from '../core/AsciiEngine';
 import { CameraDevice } from '../core/types';
 import { playStartupSound, playScanSound, startAmbientHum, stopAmbientHum, playAnalysisStartSound, playAnalysisCompleteSound } from '../utils/soundEffects';
@@ -55,42 +55,57 @@ export const AsciiCanvas = forwardRef<AsciiCanvasHandle, AsciiCanvasProps>(({
   useEffect(() => {
     if (!runCountdown) return;
 
-    let currentCount = adminConfig.countdownDuration;
-    const framesToCapture = adminConfig.layoutType === 'strip' ? 3 : 1;
-    const captured: string[] = [];
-
     const runSequence = async () => {
-      for (let i = 0; i < framesToCapture; i++) {
-        // Countdown for each photo
-        for (let j = currentCount; j > 0; j--) {
-          setCountdown(j);
-          await new Promise(r => setTimeout(r, 1000));
-        }
-        
-        // Take Photo
-        setCountdown(null);
-        if (canvasRef.current) {
-          playScanSound();
-          captured.push(canvasRef.current.toDataURL('image/png'));
-          // Flash effect
-          const flash = document.createElement('div');
-          flash.className = 'fixed inset-0 bg-white z-[500] animate-fadeOut';
-          document.body.appendChild(flash);
-          setTimeout(() => document.body.removeChild(flash), 500);
-        }
-        
-        if (i < framesToCapture - 1) {
-            await new Promise(r => setTimeout(r, 500)); // Gap between photos
-        }
-      }
+      const countdownDuration = adminConfig.countdownDuration;
+      const layoutType = adminConfig.layoutType;
+      const framesToCapture = layoutType === 'strip' ? 3 : 1;
+      const captured: string[] = [];
 
-      // Generate Souvenir
-      setIsProcessingLayout(true);
-      playAnalysisStartSound();
-      const finalImage = await compileSouvenir(captured, adminConfig);
-      onCaptureComplete(finalImage);
-      playAnalysisCompleteSound();
-      setIsProcessingLayout(false);
+      try {
+        for (let i = 0; i < framesToCapture; i++) {
+          // Inner countdown for the specific frame
+          for (let j = countdownDuration; j > 0; j--) {
+            setCountdown(j);
+            await new Promise(r => setTimeout(r, 1000));
+          }
+          
+          // Shutter Action
+          setCountdown(null);
+          if (canvasRef.current) {
+            playScanSound();
+            captured.push(canvasRef.current.toDataURL('image/png'));
+            
+            // Premium Flash Effect
+            const flash = document.createElement('div');
+            flash.className = 'fixed inset-0 bg-white z-[999] opacity-100 transition-opacity duration-500';
+            document.body.appendChild(flash);
+            requestAnimationFrame(() => {
+                flash.style.opacity = '0';
+                setTimeout(() => document.body.removeChild(flash), 500);
+            });
+          }
+          
+          // If we have more photos to take, wait briefly
+          if (i < framesToCapture - 1) {
+            await new Promise(r => setTimeout(r, 800));
+          }
+        }
+
+        // Processing & Souvenir Generation
+        setIsProcessingLayout(true);
+        playAnalysisStartSound();
+        
+        // Brief artificial delay for "processing" feel
+        await new Promise(r => setTimeout(r, 1200));
+        
+        const finalImage = await compileSouvenir(captured, adminConfig);
+        onCaptureComplete(finalImage);
+        playAnalysisCompleteSound();
+      } catch (err) {
+        console.error("Capture sequence failed:", err);
+      } finally {
+        setIsProcessingLayout(false);
+      }
     };
 
     runSequence();

@@ -39,9 +39,9 @@ const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({
   return (
     <div 
       className={`
-        bg-green-500 text-black px-4 py-2 rounded shadow-[0_0_20px_rgba(0,255,0,0.3)]
-        font-mono text-[10px] font-bold uppercase tracking-widest text-center
-        transition-all duration-500 border border-green-400
+        bg-pink-500 text-white px-8 py-3 rounded-full shadow-[0_10px_40px_rgba(244,114,182,0.3)]
+        font-sans text-[10px] font-black uppercase tracking-[0.3em] text-center
+        transition-all duration-500 border border-pink-400
         ${isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-4 scale-95'}
       `}
     >

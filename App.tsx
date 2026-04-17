@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Routes, Route, Link, useSearchParams, Navigate } from 'react-router-dom';
-import { Heart } from 'lucide-react';
+import { Heart, Grid } from 'lucide-react';
 
 // Core Components
 import { AsciiCanvas, AsciiCanvasHandle } from './components/AsciiCanvas';
@@ -15,19 +15,26 @@ import { Dashboard } from './components/Dashboard';
 import { ExploreGallery } from './components/ExploreGallery';
 
 // Services & Types
-import { AsciiOptions, VisualPreset, VISUAL_PRESETS } from './types';
+import { 
+  AsciiOptions, 
+  VisualPreset, 
+  VISUAL_PRESETS, 
+  PhotoboothState, 
+  AdminConfig, 
+  DEFAULT_ADMIN_CONFIG 
+} from './types';
 import { AppState, CameraDevice } from './core/types';
 import { trackEvent } from './services/analyticsService';
 import { initPostHog } from './services/posthogService';
 
-import { PhotoboothState, AdminConfig, DEFAULT_ADMIN_CONFIG, VisualPreset, VISUAL_PRESETS, AsciiOptions } from './types';
-import { AppState, CameraDevice } from './core/types';
 // specialized components for the flow
 import { DeliveryScreen } from './components/DeliveryScreen';
 import { AdminPanel } from './components/AdminPanel';
+import { NavSheet } from './components/NavSheet';
 
 const App: React.FC = () => {
   const [appState, setAppState] = useState<PhotoboothState>('landing');
+  const [isNavOpen, setIsNavOpen] = useState(false);
   const [adminConfig, setAdminConfig] = useState<AdminConfig>(DEFAULT_ADMIN_CONFIG);
   const [capturedSouvenir, setCapturedSouvenir] = useState<string | null>(null);
   
@@ -72,6 +79,18 @@ const App: React.FC = () => {
     setAppState('landing');
     setCapturedSouvenir(null);
     trackEvent('session_reset');
+  };
+
+  const addToast = (message: string, type: Toast['type'] = 'info') => {
+    const id = Date.now().toString();
+    setToasts(current => [...current, { id, message, type }]);
+  };
+
+  const handleUnlock = () => {
+    setIsUnlocked(true);
+    localStorage.setItem('ascii_pro_unlocked', 'true');
+    addToast("Neural Link Upgraded // Pro Unlocked", "success");
+    trackEvent('pro_unlock');
   };
 
   const handleStartCapture = () => {
@@ -143,14 +162,18 @@ const App: React.FC = () => {
                     <Heart className="w-6 h-6 text-pink-400 fill-pink-100" />
                     <span className="text-2xl font-black tracking-tighter text-slate-900">facetocode<span className="text-pink-400">.</span></span>
                   </div>
-                  
-                  {appState === 'live' && (
-                    <nav className="flex items-center gap-6 pointer-events-auto">
-                      <Link to="/explore" className="text-[10px] uppercase font-bold tracking-widest text-slate-400 hover:text-pink-500 transition-colors">Explore</Link>
-                      <button onClick={handleReset} className="text-[10px] uppercase font-bold tracking-widest text-slate-400 hover:text-red-400">Exit</button>
-                    </nav>
-                  )}
+
+                  {/* Floating Nav Button */}
+                  <button 
+                    onClick={() => setIsNavOpen(true)}
+                    className="pointer-events-auto w-14 h-14 flex items-center justify-center bg-white/40 backdrop-blur-2xl border border-white/50 rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.05)] text-slate-900 hover:bg-white/60 transition-all hover:scale-105 active:scale-95"
+                    title="Open Navigation"
+                  >
+                     <Grid className="w-6 h-6 text-pink-500" />
+                  </button>
                 </header>
+
+                <NavSheet isOpen={isNavOpen} onClose={() => setIsNavOpen(false)} />
 
                 <main className="w-full h-full relative bg-pink-50/20">
                   <AsciiCanvas 
@@ -186,6 +209,7 @@ const App: React.FC = () => {
                       souvenir={capturedSouvenir} 
                       onReset={handleReset} 
                       onShare={() => canvasRef.current?.share() as Promise<string | undefined>} 
+                      addToast={addToast}
                     />
                   )}
                 </main>

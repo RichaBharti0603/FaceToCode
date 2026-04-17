@@ -50,19 +50,11 @@ export const processFrame = (
 
 // Helper to determine text color based on mode
 export const getFillStyle = (ctx: CanvasRenderingContext2D, width: number, height: number, mode: AsciiOptions['colorMode']) => {
-  if (mode === 'matrix') {
-    return '#00ff00';
-  } else if (mode === 'bw') {
+  if (mode === 'bw') {
     return '#ffffff';
-  } else if (mode === 'retro') {
-    return '#ffb000'; // Amber
   } else if (mode === 'color') {
-    // Note: 'color' mode handled differently in rendering loop (per character) 
-    // but for simple text rendering we usually default to white if we can't do per-char
-    // The main renderer will handle per-char color if we implement it, 
-    // but for performance we might stick to monochrome text rendering 
-    // unless we iterate char by char in the main loop.
-    return '#ffffff';
+    // In 'color' mode, we typically render with a soft pink accent if not doing per-char color
+    return '#f472b6'; // tailwind pink-400
   }
-  return '#00ff00';
+  return '#ffffff';
 };

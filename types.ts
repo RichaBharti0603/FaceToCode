@@ -36,7 +36,7 @@ export interface AdminConfig {
 export const DEFAULT_ADMIN_CONFIG: AdminConfig = {
   countdownDuration: 3,
   photosPerSession: 3,
-  layoutType: 'strip',
+  layoutType: 'single',
   watermarkEnabled: true,
   autoResetEnabled: true
 };

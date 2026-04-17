@@ -1,3 +1,4 @@
+import React from 'react';
 import { Camera, Circle, Sparkles, Sliders } from 'lucide-react';
 import { VISUAL_PRESETS } from '../types';
 

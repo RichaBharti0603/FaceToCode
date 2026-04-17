@@ -6,9 +6,10 @@ interface DeliveryScreenProps {
   souvenir: string;
   onReset: () => void;
   onShare: () => Promise<string | undefined>;
+  addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
 }
 
-export const DeliveryScreen: React.FC<DeliveryScreenProps> = ({ souvenir, onReset, onShare }) => {
+export const DeliveryScreen: React.FC<DeliveryScreenProps> = ({ souvenir, onReset, onShare, addToast }) => {
   const [isSharing, setIsSharing] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -16,8 +17,9 @@ export const DeliveryScreen: React.FC<DeliveryScreenProps> = ({ souvenir, onRese
   const handleDownload = () => {
     const link = document.createElement('a');
     link.href = souvenir;
-    link.download = `facetocode_${Date.now()}.png`;
+    link.download = `facetocode-${Date.now()}.png`;
     link.click();
+    addToast("Saved to your device ✨", "success");
     trackEvent('souvenir_downloaded');
   };
 
@@ -79,17 +81,18 @@ export const DeliveryScreen: React.FC<DeliveryScreenProps> = ({ souvenir, onRese
            <div className="grid grid-cols-1 gap-4">
               <button 
                 onClick={handleDownload}
-                className="flex items-center justify-between p-6 bg-slate-900 text-white rounded-3xl hover:bg-pink-500 transition-all group"
+                className="group relative flex flex-col items-center justify-center p-10 bg-gradient-to-br from-pink-400 to-pink-600 text-white rounded-[2.5rem] shadow-[0_20px_60px_rgba(236,72,153,0.3)] hover:scale-[1.02] active:scale-95 transition-all overflow-hidden"
               >
-                 <span className="font-bold uppercase tracking-widest text-xs">Download High-Res</span>
-                 <Download className="w-5 h-5 group-hover:translate-y-1 transition-transform" />
+                 <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                 <span className="text-2xl font-black tracking-tight mb-2">Save to Gallery 💾</span>
+                 <span className="text-[10px] uppercase font-bold tracking-[0.2em] opacity-80">facetocode-[timestamp].png</span>
               </button>
 
               {!shareUrl ? (
                 <button 
                   onClick={handleShare}
                   disabled={isSharing}
-                  className="flex items-center justify-between p-6 bg-pink-50 text-pink-600 rounded-3xl hover:bg-pink-100 transition-all disabled:opacity-50"
+                  className="flex items-center justify-between p-6 bg-slate-900 text-white rounded-3xl hover:bg-slate-800 transition-all disabled:opacity-50"
                 >
                    <span className="font-bold uppercase tracking-widest text-xs">
                       {isSharing ? 'Generating Link...' : 'Create Social Link'}

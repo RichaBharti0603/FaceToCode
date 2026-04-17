@@ -9,7 +9,11 @@ export type AnalyticsEvent =
   | 'recording_stop' 
   | 'screenshot_taken' 
   | 'pro_unlock' 
-  | 'emotion_mode_toggle';
+  | 'emotion_mode_toggle'
+  | 'souvenir_downloaded'
+  | 'souvenir_link_generated'
+  | 'snapshot_shared'
+  | 'session_reset';
 
 export const trackEvent = (event: AnalyticsEvent, metadata: object = {}) => {
   try {

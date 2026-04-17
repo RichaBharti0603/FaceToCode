@@ -33,52 +33,29 @@ export class CanvasRenderer {
       this.offscreenCanvas.height = height;
     }
 
-    // 2. Update Matrix Animation State
-    if (options.colorMode === 'matrix') {
-      if (this.matrixOffsets.length !== gridWidth) {
-        this.matrixOffsets = Array.from({ length: gridWidth }, () => Math.random() * gridHeight);
-        this.matrixSpeeds = Array.from({ length: gridWidth }, () => 0.05 + Math.random() * 0.15);
-      }
-      for (let i = 0; i < gridWidth; i++) {
-        this.matrixOffsets[i] = (this.matrixOffsets[i] + this.matrixSpeeds[i]) % gridHeight;
-      }
-    }
+    // 2. Clear canvases
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, width, height);
+    this.offscreenCtx.clearRect(0, 0, width, height);
 
     const isColorMode = options.colorMode === 'color';
     const cellWidth = width / gridWidth;
     const cellHeight = height / gridHeight;
 
-    // 3. Clear canvases
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, width, height);
-    this.offscreenCtx.clearRect(0, 0, width, height);
-
-    // 4. Render ASCII to Offscreen (if Color) or Main (if Mono)
+    // 3. Render ASCII to Offscreen (if Color) or Main (if Mono)
     const targetCtx = isColorMode ? this.offscreenCtx : ctx;
     
     targetCtx.save();
     targetCtx.font = `${options.fontSize}px 'JetBrains Mono', monospace`;
     targetCtx.textAlign = 'center';
     targetCtx.textBaseline = 'middle';
-
-    if (!isColorMode) {
-      if (options.colorMode === 'matrix') targetCtx.fillStyle = '#00ff41';
-      else if (options.colorMode === 'retro') targetCtx.fillStyle = '#ffb000';
-      else targetCtx.fillStyle = '#ffffff'; // 'bw'
-    } else {
-      targetCtx.fillStyle = '#ffffff'; // White mask for color mode
-    }
-
-    const isMatrix = options.colorMode === 'matrix';
+    targetCtx.fillStyle = '#ffffff'; // Use white for both monochromatic and color masks
 
     for (let x = 0; x < gridWidth; x++) {
       const xPos = (x + 0.5) * cellWidth;
-      const offset = isMatrix ? Math.floor(this.matrixOffsets[x]) : 0;
-      
       for (let y = 0; y < gridHeight; y++) {
         const yPos = (y + 0.5) * cellHeight;
-        const charY = isMatrix ? (y - offset + gridHeight) % gridHeight : y;
-        targetCtx.fillText(chars[charY][x], xPos, yPos);
+        targetCtx.fillText(chars[y][x], xPos, yPos);
       }
     }
     targetCtx.restore();

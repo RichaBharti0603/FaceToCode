@@ -34,9 +34,8 @@ export const analyzeImage = async (base64Image: string): Promise<AnalysisResult>
       Respond in JSON format.
     `;
 
-    const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
-    const result = await model.generateContent({
+    const result = await ai.models.generateContent({
+      model: 'gemini-1.5-flash',
       contents: [{
         role: 'user',
         parts: [
@@ -44,7 +43,7 @@ export const analyzeImage = async (base64Image: string): Promise<AnalysisResult>
           { text: prompt }
         ]
       }],
-      generationConfig: {
+      config: {
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.OBJECT,
@@ -58,10 +57,9 @@ export const analyzeImage = async (base64Image: string): Promise<AnalysisResult>
       }
     });
 
-    const text = result.response.text();
-    if (!text) throw new Error("No response from AI");
+    if (!result.text) throw new Error("No response from AI");
 
-    return JSON.parse(text) as AnalysisResult;
+    return JSON.parse(result.text) as AnalysisResult;
 
   } catch (error) {
     console.error("Gemini API Error:", error);
@@ -85,9 +83,8 @@ export const detectEmotion = async (base64Image: string): Promise<'happy' | 'neu
 
     const prompt = "Identify the dominant facial expression from this image. Options: happy, neutral, serious. Respond only with one single word.";
 
-    const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
-    const result = await model.generateContent({
+    const result = await ai.models.generateContent({
+      model: 'gemini-1.5-flash',
       contents: [{
         role: 'user',
         parts: [
@@ -97,7 +94,7 @@ export const detectEmotion = async (base64Image: string): Promise<'happy' | 'neu
       }]
     });
 
-    const emotion = result.response.text().trim().toLowerCase();
+    const emotion = result.text.trim().toLowerCase();
     
     if (emotion.includes('happy')) return 'happy';
     if (emotion.includes('serious')) return 'serious';
