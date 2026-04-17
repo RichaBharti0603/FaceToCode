@@ -230,21 +230,43 @@ export const AsciiCanvas = forwardRef<AsciiCanvasHandle, AsciiCanvasProps>(({
     }
   }
 
+  const getThemeFilter = () => {
+    switch (options.theme) {
+      case 'pink': return 'sepia(0.3) hue-rotate(-30deg) saturate(1.4) brightness(1.1)';
+      case 'dreamy': return 'blur(0.4px) brightness(1.1) contrast(0.9) saturate(1.1)';
+      case 'noir': return 'grayscale(1) contrast(1.2) brightness(1.05)';
+      case 'pastel': return 'saturate(0.6) brightness(1.15) contrast(0.85)';
+      case 'sparkle': return 'brightness(1.2) contrast(1.1)';
+      default: return 'none';
+    }
+  };
+
   return (
-    <div className="relative w-full h-full bg-black">
+    <div className="relative w-full h-full bg-white flex items-center justify-center p-8">
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/90 text-red-500 z-50 font-mono">
-          <p className="animate-pulse font-bold">{error}</p>
+        <div className="absolute inset-0 flex items-center justify-center bg-white/90 text-slate-300 z-50 font-sans">
+          <p className="animate-pulse font-bold tracking-[0.3em] uppercase text-[10px]">{error}</p>
         </div>
       )}
       
-      <canvas ref={canvasRef} className="block w-full h-full" />
+      <div className="relative w-full h-full flex items-center justify-center overflow-hidden rounded-[3rem] bg-slate-50 border border-slate-100 shadow-inner">
+        <canvas 
+            ref={canvasRef} 
+            className="block max-w-full max-h-full object-contain transition-all duration-1000" 
+            style={{ 
+                filter: getThemeFilter(),
+            }}
+        />
+        
+        {/* Subtle Overlays */}
+        <div className="absolute inset-0 pointer-events-none border-[32px] border-white/10" />
+      </div>
       
-      {/* Recording Indicator */}
+      {/* Aesthetic Recording Indicator */}
       {isRecording && (
-        <div className="absolute top-6 left-6 flex items-center gap-3 text-red-500 font-mono text-[10px] z-40 bg-black/40 backdrop-blur px-3 py-1.5 rounded-full border border-red-500/30">
-          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-          <span className="font-black uppercase tracking-widest">Recording Stream</span>
+        <div className="absolute top-12 left-1/2 -translate-x-1/2 flex items-center gap-3 text-red-400 font-sans text-[10px] z-40 bg-white/80 backdrop-blur-md shadow-lg px-6 py-2.5 rounded-full border border-white/50">
+          <div className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse" />
+          <span className="font-bold uppercase tracking-[0.2em]">Live Session Captured</span>
         </div>
       )}
 

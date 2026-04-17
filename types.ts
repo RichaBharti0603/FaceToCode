@@ -2,9 +2,10 @@ export interface AsciiOptions {
   fontSize: number;
   brightness: number;
   contrast: number;
-  colorMode: 'matrix' | 'bw' | 'color' | 'retro';
-  density: 'simple' | 'complex' | 'binary' | 'blocks' | 'matrix';
-  resolution: number; // Downscaling factor (0.1 - 1.0)
+  colorMode: 'bw' | 'color';
+  density: 'soft' | 'airy' | 'binary' | 'blocks' | 'sparkle';
+  resolution: number; 
+  theme: 'pink' | 'dreamy' | 'noir' | 'pastel' | 'sparkle' | 'none';
   autoEmotion?: boolean;
 }
 
@@ -15,13 +16,11 @@ export interface AnalysisResult {
 }
 
 export const DENSITY_MAPS = {
-  simple: " .:-=+*#%@",
-  // User requested characters <.!@#$%^&*, sorted by visual density for smoothness
-  // Original order was keyboard layout which causes flickering
-  complex: " .^!*<&%$#@", 
+  soft: " .:-=+*#",
+  airy: " .:+*",
   binary: " 01",
   blocks: " ░▒▓█",
-  matrix: "01", // Binary charset as requested
+  sparkle: " .·:+*", 
 };
 
 export interface VisualPreset {
@@ -32,23 +31,28 @@ export interface VisualPreset {
 
 export const VISUAL_PRESETS: VisualPreset[] = [
   { 
-    id: 'cyber_matrix', 
-    name: 'Neural Matrix', 
-    options: { colorMode: 'matrix', density: 'complex', fontSize: 10, resolution: 0.18 } 
+    id: 'soft_pink', 
+    name: 'Soft Pink ✨', 
+    options: { theme: 'pink', colorMode: 'color', density: 'soft', fontSize: 10, resolution: 0.18, contrast: 0.9, brightness: 1.1 } 
   },
   { 
-    id: 'amber_glow', 
-    name: 'Retro Terminal', 
-    options: { colorMode: 'retro', density: 'simple', fontSize: 12, resolution: 0.15 } 
+    id: 'dreamy_cloud', 
+    name: 'Dreamy ☁️', 
+    options: { theme: 'dreamy', colorMode: 'color', density: 'airy', fontSize: 12, resolution: 0.12, contrast: 0.8, brightness: 1.2 } 
   },
   { 
-    id: 'chroma_spectrum', 
-    name: 'Chroma Spectrum', 
-    options: { colorMode: 'color', density: 'complex', fontSize: 8, resolution: 0.25 } 
+    id: 'noir_classic', 
+    name: 'Noir 🎞️', 
+    options: { theme: 'noir', colorMode: 'bw', density: 'soft', fontSize: 10, resolution: 0.20, contrast: 1.1, brightness: 1.0 } 
   },
   { 
-    id: 'binary_void', 
-    name: 'Binary Void', 
-    options: { colorMode: 'bw', density: 'binary', fontSize: 14, resolution: 0.12 } 
+    id: 'pastel_vibe', 
+    name: 'Pastel 🎨', 
+    options: { theme: 'pastel', colorMode: 'color', density: 'soft', fontSize: 9, resolution: 0.25, contrast: 0.85, brightness: 1.15 } 
+  },
+  { 
+    id: 'sparkle_joy', 
+    name: 'Sparkle ✨', 
+    options: { theme: 'sparkle', colorMode: 'bw', density: 'sparkle', fontSize: 14, resolution: 0.15, contrast: 1.2, brightness: 1.05 } 
   }
 ];

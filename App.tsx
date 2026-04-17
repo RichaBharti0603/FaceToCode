@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Routes, Route, Link, useSearchParams, Navigate } from 'react-router-dom';
-import { Camera, Terminal, Archive, Compass, ChevronRight } from 'lucide-react';
+import { Heart } from 'lucide-react';
 
 // Core Components
 import { AsciiCanvas, AsciiCanvasHandle } from './components/AsciiCanvas';
@@ -94,7 +94,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full h-screen bg-black overflow-hidden selection:bg-green-500 selection:text-black">
+    <div className="relative w-full h-screen bg-white overflow-hidden selection:bg-pink-200 selection:text-slate-900 font-sans">
       <Toaster toasts={toasts} removeToast={removeToast} />
 
       <Routes>
@@ -111,35 +111,21 @@ const App: React.FC = () => {
               />
             ) : (
               <>
-                {/* Minimal Global Header */}
-                <header className="absolute top-0 left-0 w-full p-6 z-40 flex justify-between items-start pointer-events-none">
-                  <div className="flex flex-col gap-1 pointer-events-auto">
-                    <div className="flex items-center gap-3 text-white font-black uppercase tracking-[0.2em] text-sm">
-                      <Terminal className="w-4 h-4 text-green-500" />
-                      FaceToCode
-                    </div>
-                    <div className="text-[8px] text-white/30 uppercase tracking-widest flex items-center gap-2">
-                       <span>Secure Uplink: Stable</span>
-                       <span className="w-1 h-1 bg-green-500 rounded-full animate-pulse" />
-                    </div>
+                {/* Minimal Aesthetic Header */}
+                <header className="absolute top-0 left-0 w-full p-8 z-40 flex justify-between items-center pointer-events-none">
+                  <div className="flex items-center gap-3 pointer-events-auto">
+                    <Heart className="w-5 h-5 text-pink-400" />
+                    <span className="text-xl font-light tracking-tighter text-slate-800">facetocode<span className="text-pink-400 font-black">.</span></span>
                   </div>
 
-                  <nav className="flex items-center gap-6 pointer-events-auto">
-                    <Link to="/explore" className="text-white/40 hover:text-white transition-colors">
-                       <div className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest">
-                          <Compass className="w-3 h-3" /> Explore
-                       </div>
-                    </Link>
-                    <Link to="/my" className="text-white/40 hover:text-white transition-colors">
-                       <div className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest">
-                          <Archive className="w-3 h-3" /> Archive
-                       </div>
-                    </Link>
+                  <nav className="flex items-center gap-8 pointer-events-auto bg-white/20 backdrop-blur-md px-6 py-3 rounded-full border border-white/30 shadow-sm">
+                    <Link to="/explore" className="text-slate-500 hover:text-slate-900 transition-colors text-[10px] uppercase font-bold tracking-widest">Explore</Link>
+                    <Link to="/my" className="text-slate-500 hover:text-slate-900 transition-colors text-[10px] uppercase font-bold tracking-widest">Archive</Link>
                   </nav>
                 </header>
 
-                {/* Focus: The Canvas */}
-                <main className="flex-grow relative z-10">
+                {/* Main Focus */}
+                <main className="flex-grow relative z-10 transition-opacity duration-1000">
                   <AsciiCanvas 
                     ref={canvasRef}
                     options={options} 
@@ -158,7 +144,6 @@ const App: React.FC = () => {
                   />
                 </main>
 
-                {/* Minimal Control Bar */}
                 <ControlBar 
                    onCapture={handleCapture}
                    onShare={handleShare}
@@ -168,7 +153,6 @@ const App: React.FC = () => {
                    currentPresetName={VISUAL_PRESETS[currentPresetIndex].name}
                 />
 
-                {/* Advanced Settings Overlay */}
                 <SettingsPanel 
                    isOpen={isSettingsOpen}
                    onClose={() => setIsSettingsOpen(false)}
@@ -184,13 +168,13 @@ const App: React.FC = () => {
                    isRecording={canvasRef.current?.isRecording || false}
                    onToggleRecording={() => canvasRef.current?.toggleRecording()}
                    onAnalyzeFeed={() => canvasRef.current?.analyze()}
-                   isAnalyzingCaption={false} // Managed internally by canvas
+                   isAnalyzingCaption={false}
                 />
               </>
             )}
             
-            {/* Scanlines Effect */}
-            <div className="absolute inset-0 z-20 pointer-events-none opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%]"></div>
+            {/* Aesthetic Grain / Texture (Optional) */}
+            <div className="absolute inset-0 z-[5] pointer-events-none opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/p6.png')]"></div>
           </div>
         } />
         <Route path="*" element={<Navigate to="/" replace />} />

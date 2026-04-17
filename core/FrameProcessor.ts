@@ -64,12 +64,11 @@ export class FrameProcessor {
 
     // 4. Calculate Brightness and Apply Temporal Smoothing
     // smoothing 0.0 = no smoothing, 1.0 = static
-    const inertia = 0.75; 
+    const inertia = 0.82; // Slightly higher for smoother, dreamy transition
     const contrastFactor = (259 * (options.contrast * 255 + 255)) / (255 * (259 - options.contrast * 255));
     
     const chars: string[][] = [];
-    const density = options.colorMode === 'matrix' ? 'matrix' : options.density;
-    const densityMap = DENSITY_MAPS[density];
+    const densityMap = DENSITY_MAPS[options.density];
     const mapLen = densityMap.length - 1;
 
     for (let y = 0; y < rows; y++) {
@@ -83,6 +82,9 @@ export class FrameProcessor {
         // Rec. 709 luminance
         let brightness = 0.2126 * r + 0.7152 * g + 0.0722 * b;
         
+        // Aesthetic Normalization: Lift the shadows slightly so faces don't disappear
+        brightness = Math.max(20, brightness); // Never pure black
+
         // Application of options
         brightness = contrastFactor * (brightness - 128) + 128;
         brightness *= options.brightness;
@@ -100,7 +102,7 @@ export class FrameProcessor {
         const charIndex = Math.floor((smoothed / 255) * mapLen);
         row.push(densityMap[charIndex]);
         
-        // Save colors for renderer
+        // Save colors
         colorBuffer[i] = r;
         colorBuffer[i + 1] = g;
         colorBuffer[i + 2] = b;
