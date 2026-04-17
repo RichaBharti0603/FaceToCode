@@ -1,15 +1,14 @@
-import React, { useRef, useEffect, useState, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { AsciiOptions } from '../types';
 import { AsciiEngine } from '../core/AsciiEngine';
 import { CameraDevice } from '../core/types';
 import { playStartupSound, playScanSound, startAmbientHum, stopAmbientHum, playAnalysisStartSound, playAnalysisCompleteSound } from '../utils/soundEffects';
-import { ScanEye, Camera, Circle, Brain, Share2, Globe, Lock } from 'lucide-react';
-import { CaptionOverlay } from './CaptionOverlay';
 import { detectEmotion } from '../services/geminiService';
 import { trackEvent } from '../services/analyticsService';
 import { trackPH } from '../services/posthogService';
 import { AsciiFrame } from '../core/types';
 import { getOrInitializeUserId } from '../utils/identity';
+import { CaptionOverlay } from './CaptionOverlay';
 
 interface AsciiCanvasProps {
   options: AsciiOptions;
@@ -21,7 +20,15 @@ interface AsciiCanvasProps {
   isHDEnabled: boolean;
 }
 
-export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({ 
+export interface AsciiCanvasHandle {
+  capture: () => void;
+  share: () => Promise<void>;
+  toggleRecording: () => void;
+  analyze: () => void;
+  isRecording: boolean;
+}
+
+export const AsciiCanvas = forwardRef<AsciiCanvasHandle, AsciiCanvasProps>(({ 
   options, 
   setOptions,
   onCapture, 
@@ -29,7 +36,7 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({
   selectedCameraId,
   isUnlocked,
   isHDEnabled
-}) => {
+}, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const latestFrameRef = useRef<AsciiFrame | null>(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -43,7 +50,6 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({
 
     const interval = setInterval(async () => {
       if (canvasRef.current) {
-        // Fast, low-res capture for heartbeat
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = 160;
         tempCanvas.height = 120;
@@ -97,6 +103,39 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({
     }
   }), []);
 
+  // Expose Handle
+  useImperativeHandle(ref, () => ({
+    capture: () => {
+        if (canvasRef.current) {
+            playScanSound();
+            const dataUrl = canvasRef.current.toDataURL('image/png');
+            onCapture(dataUrl);
+        }
+    },
+    share: handleShareSnapshot,
+    toggleRecording: () => {
+        if (isRecording) {
+            engine.stopRecording();
+            setIsRecording(false);
+            trackEvent('recording_stop');
+        } else {
+            trackEvent('recording_start', { isHD: isHDEnabled });
+            const recordOptions = isHDEnabled ? {
+                width: 1080,
+                height: 1920,
+                fps: 30,
+                isUnlocked: isUnlocked
+            } : {
+                isUnlocked: isUnlocked
+            };
+            engine.startRecording(recordOptions);
+            setIsRecording(true);
+        }
+    },
+    analyze: handleAnalyzeFeed,
+    isRecording
+  }));
+
   // Sync Options
   useEffect(() => {
     engine.updateOptions(options);
@@ -136,82 +175,31 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const handleCaptureClick = () => {
-    if (canvasRef.current) {
-      playScanSound();
-      const dataUrl = canvasRef.current.toDataURL('image/png');
-      onCapture(dataUrl);
-    }
-  };
-
-  const handleScreenshotClick = () => {
-    if (canvasRef.current) {
-      playScanSound();
-      trackEvent('screenshot_taken');
-      const dataUrl = canvasRef.current.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.href = dataUrl;
-      link.download = `cyber_ascii_${Date.now()}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  };
-
-  const toggleRecording = () => {
-    if (isRecording) {
-      engine.stopRecording();
-      setIsRecording(false);
-      trackEvent('recording_stop');
-    } else {
-      trackEvent('recording_start', { isHD: isHDEnabled });
-      const recordOptions = isHDEnabled ? {
-        width: 1080,
-        height: 1920,
-        fps: 30,
-        isUnlocked: isUnlocked
-      } : {
-        isUnlocked: isUnlocked
-      };
-      
-      engine.startRecording(recordOptions);
-      setIsRecording(true);
-    }
-  };
-
-  const handleAnalyzeFeed = async () => {
+  async function handleAnalyzeFeed() {
     if (isAnalyzingCaption) return;
-    
     setIsAnalyzingCaption(true);
     setShowCaption(true);
-    setCaption("INITIALIZING NEURAL LINK... ANALYZING VISUAL BUFFER...");
+    setCaption("INITIALIZING NEURAL LINK...");
     playAnalysisStartSound();
     
     try {
       const result = await engine.getCaption();
       setCaption(result.description);
       playAnalysisCompleteSound();
-      
-      // Auto-hide after 10 seconds
-      setTimeout(() => setShowCaption(false), 10000);
+      setTimeout(() => setShowCaption(false), 8000);
     } catch (err) {
-      setCaption("ANALYSIS ERROR: UNABLE TO DECODE VISUAL SIGNALS.");
+      setCaption("ANALYSIS ERROR.");
     } finally {
       setIsAnalyzingCaption(false);
     }
-  };
+  }
 
-  const handleShareSnapshot = async () => {
+  async function handleShareSnapshot() {
     if (!latestFrameRef.current || isSharing) return;
-
     setIsSharing(true);
     playScanSound();
-
     try {
-      const asciiString = latestFrameRef.current.chars
-        .map(row => row.join(''))
-        .join('\n');
-
+      const asciiString = latestFrameRef.current.chars.map(row => row.join('')).join('\n');
       const previewImage = canvasRef.current?.toDataURL('image/png');
       const userId = getOrInitializeUserId();
 
@@ -228,29 +216,25 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({
       });
 
       if (!response.ok) throw new Error("Upload Failed");
-      
       const { id } = await response.json();
       const shareUrl = `${window.location.origin}/s/${id}`;
-      
       await navigator.clipboard.writeText(shareUrl);
-      alert(`NEURAL FRAGMENT PERSISTED.\nLINK COPIED TO CLIPBOARD:\n${shareUrl}`);
       
-      // Track session event
       trackEvent('snapshot_shared', { id, userId });
-      trackPH('snapshot_shared', { id, userId, isPublic, mode: options.colorMode });
+      return id; // Return ID for outer toaster
     } catch (err) {
-      alert("CRITICAL ERROR: DATA PERSISTENCE FAILED.");
       console.error(err);
+      throw err;
     } finally {
       setIsSharing(false);
     }
-  };
+  }
 
   return (
     <div className="relative w-full h-full bg-black">
       {error && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/90 text-red-500 z-50 font-mono">
-          <p className="animate-pulse">{error}</p>
+          <p className="animate-pulse font-bold">{error}</p>
         </div>
       )}
       
@@ -258,75 +242,13 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({
       
       {/* Recording Indicator */}
       {isRecording && (
-        <div className="absolute top-4 right-4 flex items-center gap-2 text-red-500 font-mono text-xs z-40 bg-black/50 px-2 py-1 rounded">
-          <div className="w-2 h-2 bg-red-500 rounded-full animate-ping" />
-          <span>REC: {(Date.now() / 1000 % 1000).toFixed(0)}s</span>
+        <div className="absolute top-6 left-6 flex items-center gap-3 text-red-500 font-mono text-[10px] z-40 bg-black/40 backdrop-blur px-3 py-1.5 rounded-full border border-red-500/30">
+          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+          <span className="font-black uppercase tracking-widest">Recording Stream</span>
         </div>
       )}
-
-      {/* Floating Controls Container */}
-      <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 flex items-center gap-6 z-40">
-        {/* Screenshot Button */}
-        <button 
-          onClick={handleScreenshotClick}
-          className="bg-black/60 hover:bg-green-900/80 text-green-400 border border-green-500/50 p-4 rounded-full backdrop-blur-md transition-all active:scale-95 hover:scale-105 hover:shadow-[0_0_15px_rgba(0,255,0,0.3)]"
-          title="Save Snapshot"
-        >
-          <Camera className="w-6 h-6" />
-        </button>
-
-        {/* Share Snapshot */}
-        <div className="flex flex-col items-center gap-2">
-            <button 
-              onClick={handleShareSnapshot}
-              disabled={isSharing}
-              className={`bg-black/60 ${isSharing ? 'text-yellow-500 animate-pulse' : 'text-yellow-400'} border border-yellow-500/50 p-4 rounded-full backdrop-blur-md transition-all active:scale-95 hover:scale-105 hover:shadow-[0_0_15px_rgba(255,200,0,0.3)]`}
-              title="Generate Share Link"
-            >
-              <Share2 className={`w-6 h-6 ${isSharing ? 'animate-bounce' : ''}`} />
-            </button>
-            <button 
-                onClick={() => {
-                    setIsPublic(!isPublic);
-                    trackPH('privacy_toggle', { isPublic: !isPublic });
-                }}
-                className={`flex items-center gap-1 text-[8px] uppercase font-black px-2 py-0.5 rounded border transition-all ${isPublic ? 'text-green-500 border-green-500/30 bg-green-500/10' : 'text-red-500 border-red-500/30 bg-red-500/10'}`}
-            >
-                {isPublic ? <Globe className="w-2 h-2" /> : <Lock className="w-2 h-2" />}
-                {isPublic ? 'Public' : 'Private'}
-            </button>
-        </div>
-
-        {/* Scan & Analyze Button (Primary) */}
-        <button 
-          onClick={handleCaptureClick}
-          className="bg-green-500/20 hover:bg-green-500/40 text-green-400 border border-green-500/50 p-6 rounded-full backdrop-blur-md transition-all active:scale-95 group relative hover:shadow-[0_0_25px_rgba(0,255,0,0.5)]"
-          title="Scan & Analyze"
-        >
-          <div className="absolute inset-0 rounded-full border border-green-500 opacity-50 animate-ping"></div>
-          <ScanEye className="w-8 h-8" />
-        </button>
-
-        {/* AI Caption Button */}
-        <button 
-          onClick={handleAnalyzeFeed}
-          className={`bg-black/60 ${isAnalyzingCaption ? 'text-blue-400 border-blue-500/50' : 'text-blue-500 border-blue-500/50'} border p-4 rounded-full backdrop-blur-md transition-all active:scale-95 hover:scale-105 hover:shadow-[0_0_15px_rgba(0,100,255,0.3)]`}
-          title="Intelligence Assessment"
-        >
-          <Brain className={`w-6 h-6 ${isAnalyzingCaption ? 'animate-pulse' : ''}`} />
-        </button>
-
-        {/* Video Record Button */}
-        <button 
-          onClick={toggleRecording}
-          className={`bg-black/60 ${isRecording ? 'text-red-500 border-red-500/50 animate-pulse' : 'text-green-400 border-green-500/50'} border p-4 rounded-full backdrop-blur-md transition-all active:scale-95 hover:scale-105 hover:shadow-[0_0_15px_rgba(255,0,0,0.3)]`}
-          title={isRecording ? "Stop Recording" : (isHDEnabled ? "Record HD Video" : "Record Video")}
-        >
-          <Circle className={`w-6 h-6 ${isRecording ? 'fill-red-500' : ''}`} />
-        </button>
-      </div>
 
       <CaptionOverlay caption={caption} isVisible={showCaption} />
     </div>
   );
-};
+});

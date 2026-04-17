@@ -1,0 +1,51 @@
+import React, { useEffect, useState } from 'react';
+
+/**
+ * Global toast notification system for FaceToCode
+ */
+export interface Toast {
+  id: string;
+  message: string;
+  type?: 'success' | 'error' | 'info';
+}
+
+interface ToasterProps {
+  toasts: Toast[];
+  removeToast: (id: string) => void;
+}
+
+export const Toaster: React.FC<ToasterProps> = ({ toasts, removeToast }) => {
+  return (
+    <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[200] flex flex-col gap-2 w-full max-w-xs px-4 pointer-events-none">
+      {toasts.map((toast) => (
+        <ToastItem key={toast.id} toast={toast} onRemove={removeToast} />
+      ))}
+    </div>
+  );
+};
+
+const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({ toast, onRemove }) => {
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsVisible(false);
+      setTimeout(() => onRemove(toast.id), 500); // Wait for fade out
+    }, 2500);
+
+    return () => clearTimeout(timer);
+  }, [toast.id, onRemove]);
+
+  return (
+    <div 
+      className={`
+        bg-green-500 text-black px-4 py-2 rounded shadow-[0_0_20px_rgba(0,255,0,0.3)]
+        font-mono text-[10px] font-bold uppercase tracking-widest text-center
+        transition-all duration-500 border border-green-400
+        ${isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-4 scale-95'}
+      `}
+    >
+      {toast.message}
+    </div>
+  );
+};

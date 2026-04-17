@@ -1,17 +1,26 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisResult } from '../types';
 
+/**
+ * Initialize and get the Google AI Client
+ */
 const getClient = () => {
-  const apiKey = process.env.API_KEY;
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error("API Key not found in environment variables");
+    console.warn("VITE_GEMINI_API_KEY not found in environment variables");
+    return null;
   }
   return new GoogleGenAI({ apiKey });
 };
 
+/**
+ * Analyzes an image for visual features and threat level
+ */
 export const analyzeImage = async (base64Image: string): Promise<AnalysisResult> => {
   try {
     const ai = getClient();
+    if (!ai) throw new Error("AI Client not initialized");
+
     // Remove the data URL prefix if present for the API call
     const cleanBase64 = base64Image.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
 
@@ -25,29 +34,31 @@ export const analyzeImage = async (base64Image: string): Promise<AnalysisResult>
       Respond in JSON format.
     `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: {
+    const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+    const result = await model.generateContent({
+      contents: [{
+        role: 'user',
         parts: [
           { inlineData: { mimeType: 'image/png', data: cleanBase64 } },
           { text: prompt }
         ]
-      },
-      config: {
+      }],
+      generationConfig: {
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            description: { type: Type.STRING, description: "A robotic, 2-sentence analysis of the subject." },
-            threatLevel: { type: Type.STRING, description: "The calculated threat level." },
-            tags: { type: Type.ARRAY, items: { type: Type.STRING }, description: "List of 3-5 keywords identifying features." }
+            description: { type: Type.STRING },
+            threatLevel: { type: Type.STRING },
+            tags: { type: Type.ARRAY, items: { type: Type.STRING } }
           },
           required: ["description", "threatLevel", "tags"]
         }
       }
     });
 
-    const text = response.text;
+    const text = result.response.text();
     if (!text) throw new Error("No response from AI");
 
     return JSON.parse(text) as AnalysisResult;
@@ -60,24 +71,34 @@ export const analyzeImage = async (base64Image: string): Promise<AnalysisResult>
       tags: ["ERROR", "NO_DATA"]
     };
   }
+};
+
+/**
+ * Detect dominant emotion for auto-styling
+ */
 export const detectEmotion = async (base64Image: string): Promise<'happy' | 'neutral' | 'serious'> => {
   try {
     const ai = getClient();
+    if (!ai) throw new Error("AI Client not initialized");
+
     const cleanBase64 = base64Image.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
 
     const prompt = "Identify the dominant facial expression from this image. Options: happy, neutral, serious. Respond only with one single word.";
 
-    const result = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: {
+    const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+    const result = await model.generateContent({
+      contents: [{
+        role: 'user',
         parts: [
           { inlineData: { mimeType: 'image/png', data: cleanBase64 } },
           { text: prompt }
         ]
-      }
+      }]
     });
 
-    const emotion = result.text.trim().toLowerCase();
+    const emotion = result.response.text().trim().toLowerCase();
+    
     if (emotion.includes('happy')) return 'happy';
     if (emotion.includes('serious')) return 'serious';
     return 'neutral';

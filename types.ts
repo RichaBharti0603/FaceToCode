@@ -23,3 +23,32 @@ export const DENSITY_MAPS = {
   blocks: " ░▒▓█",
   matrix: "01", // Binary charset as requested
 };
+
+export interface VisualPreset {
+  id: string;
+  name: string;
+  options: Partial<AsciiOptions>;
+}
+
+export const VISUAL_PRESETS: VisualPreset[] = [
+  { 
+    id: 'cyber_matrix', 
+    name: 'Neural Matrix', 
+    options: { colorMode: 'matrix', density: 'complex', fontSize: 10, resolution: 0.18 } 
+  },
+  { 
+    id: 'amber_glow', 
+    name: 'Retro Terminal', 
+    options: { colorMode: 'retro', density: 'simple', fontSize: 12, resolution: 0.15 } 
+  },
+  { 
+    id: 'chroma_spectrum', 
+    name: 'Chroma Spectrum', 
+    options: { colorMode: 'color', density: 'complex', fontSize: 8, resolution: 0.25 } 
+  },
+  { 
+    id: 'binary_void', 
+    name: 'Binary Void', 
+    options: { colorMode: 'bw', density: 'binary', fontSize: 14, resolution: 0.12 } 
+  }
+];
