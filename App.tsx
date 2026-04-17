@@ -31,10 +31,13 @@ import { initPostHog } from './services/posthogService';
 import { DeliveryScreen } from './components/DeliveryScreen';
 import { AdminPanel } from './components/AdminPanel';
 import { NavSheet } from './components/NavSheet';
+import { CreativeToolbar } from './components/CreativeToolbar';
+import { CreativeSheet } from './components/CreativeSheet';
 
 const App: React.FC = () => {
   const [appState, setAppState] = useState<PhotoboothState>('landing');
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const [isCreativeSheetOpen, setIsCreativeSheetOpen] = useState(false);
   const [adminConfig, setAdminConfig] = useState<AdminConfig>(DEFAULT_ADMIN_CONFIG);
   const [capturedSouvenir, setCapturedSouvenir] = useState<string | null>(null);
   
@@ -174,6 +177,12 @@ const App: React.FC = () => {
                 </header>
 
                 <NavSheet isOpen={isNavOpen} onClose={() => setIsNavOpen(false)} />
+                <CreativeSheet 
+                  isOpen={isCreativeSheetOpen} 
+                  onClose={() => setIsCreativeSheetOpen(false)} 
+                  options={options}
+                  setOptions={setOptions}
+                />
 
                 <main className="w-full h-full relative bg-pink-50/20">
                   <AsciiCanvas 
@@ -188,6 +197,14 @@ const App: React.FC = () => {
                     runCountdown={appState === 'countdown'}
                     adminConfig={adminConfig}
                   />
+
+                  {appState === 'live' && (
+                    <CreativeToolbar 
+                      options={options} 
+                      setOptions={setOptions} 
+                      onOpenCreativeSheet={() => setIsCreativeSheetOpen(true)} 
+                    />
+                  )}
 
                   {appState === 'review' && capturedSouvenir && (
                     <div className="absolute inset-0 z-[100] bg-white/60 backdrop-blur-2xl flex items-center justify-center p-8">

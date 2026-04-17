@@ -198,6 +198,79 @@ export const playAnalysisCompleteSound = async () => {
     } catch (e) { console.error(e); }
 }
 
+export const playShutterSound = async () => {
+    try {
+        const ctx = await ensureContext();
+        const t = ctx.currentTime;
+        
+        // Noise burst for the "click"
+        const bufferSize = ctx.sampleRate * 0.05;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
+        
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+        const noiseFilter = ctx.createBiquadFilter();
+        const noiseGain = ctx.createGain();
+        
+        noiseFilter.type = 'highpass';
+        noiseFilter.frequency.setValueAtTime(1000, t);
+        
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(ctx.destination);
+        
+        noiseGain.gain.setValueAtTime(0.08, t);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+        
+        noise.start(t);
+        noise.stop(t + 0.05);
+
+        // Tone part of the shutter
+        const osc = ctx.createOscillator();
+        const toneGain = ctx.createGain();
+        osc.connect(toneGain);
+        toneGain.connect(ctx.destination);
+        
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(200, t);
+        osc.frequency.exponentialRampToValueAtTime(50, t + 0.1);
+        
+        toneGain.gain.setValueAtTime(0.05, t);
+        toneGain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+        
+        osc.start(t);
+        osc.stop(t + 0.1);
+    } catch (e) {}
+};
+
+export const playSuccessDing = async () => {
+    try {
+        const ctx = await ensureContext();
+        const t = ctx.currentTime;
+        
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1200, t);
+        osc.frequency.exponentialRampToValueAtTime(1600, t + 0.1);
+        
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.04, t + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+        
+        osc.start(t);
+        osc.stop(t + 0.4);
+    } catch (e) {}
+};
+
 export const playButtonSound = async () => {
     try {
         const ctx = await ensureContext();
@@ -217,4 +290,4 @@ export const playButtonSound = async () => {
         osc.start();
         osc.stop(ctx.currentTime + 0.05);
     } catch (e) {}
-}
+};

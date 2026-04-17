@@ -2,7 +2,16 @@ import React, { useRef, useEffect, useState, useMemo, forwardRef, useImperativeH
 import { AsciiOptions, AdminConfig } from '../types';
 import { AsciiEngine } from '../core/AsciiEngine';
 import { CameraDevice } from '../core/types';
-import { playStartupSound, playScanSound, startAmbientHum, stopAmbientHum, playAnalysisStartSound, playAnalysisCompleteSound } from '../utils/soundEffects';
+import { 
+  playStartupSound, 
+  playScanSound, 
+  startAmbientHum, 
+  stopAmbientHum, 
+  playAnalysisStartSound, 
+  playAnalysisCompleteSound,
+  playShutterSound,
+  playSuccessDing
+} from '../utils/soundEffects';
 import { detectEmotion } from '../services/geminiService';
 import { trackEvent } from '../services/analyticsService';
 import { trackPH } from '../services/posthogService';
@@ -58,35 +67,41 @@ export const AsciiCanvas = forwardRef<AsciiCanvasHandle, AsciiCanvasProps>(({
     const runSequence = async () => {
       const countdownDuration = adminConfig.countdownDuration;
       const layoutType = adminConfig.layoutType;
-      const framesToCapture = layoutType === 'strip' ? 3 : 1;
+      const isGifMode = options.captureMode === 'gif';
+      const framesToCapture = isGifMode ? 10 : (layoutType === 'strip' ? 3 : 1);
       const captured: string[] = [];
 
       try {
+        // Initial Countdown
+        for (let j = countdownDuration; j > 0; j--) {
+          setCountdown(j);
+          await new Promise(r => setTimeout(r, 1000));
+        }
+        setCountdown(null);
+
+        // Flash & Shutter Sound at Start
+        if (canvasRef.current) {
+          playShutterSound();
+          if (navigator.vibrate) navigator.vibrate(50);
+          
+          const flash = document.createElement('div');
+          flash.className = 'fixed inset-0 bg-white z-[999] opacity-100 transition-opacity duration-500';
+          document.body.appendChild(flash);
+          requestAnimationFrame(() => {
+              flash.style.opacity = '0';
+              setTimeout(() => document.body.removeChild(flash), 500);
+          });
+        }
+
         for (let i = 0; i < framesToCapture; i++) {
-          // Inner countdown for the specific frame
-          for (let j = countdownDuration; j > 0; j--) {
-            setCountdown(j);
-            await new Promise(r => setTimeout(r, 1000));
-          }
-          
-          // Shutter Action
-          setCountdown(null);
           if (canvasRef.current) {
-            playScanSound();
             captured.push(canvasRef.current.toDataURL('image/png'));
-            
-            // Premium Flash Effect
-            const flash = document.createElement('div');
-            flash.className = 'fixed inset-0 bg-white z-[999] opacity-100 transition-opacity duration-500';
-            document.body.appendChild(flash);
-            requestAnimationFrame(() => {
-                flash.style.opacity = '0';
-                setTimeout(() => document.body.removeChild(flash), 500);
-            });
           }
           
-          // If we have more photos to take, wait briefly
-          if (i < framesToCapture - 1) {
+          // Fast capture for GIF, slow for Strip
+          if (isGifMode) {
+            await new Promise(r => setTimeout(r, 100)); // 10fps capture
+          } else if (layoutType === 'strip' && i < framesToCapture - 1) {
             await new Promise(r => setTimeout(r, 800));
           }
         }
@@ -95,7 +110,6 @@ export const AsciiCanvas = forwardRef<AsciiCanvasHandle, AsciiCanvasProps>(({
         setIsProcessingLayout(true);
         playAnalysisStartSound();
         
-        // Brief artificial delay for "processing" feel
         await new Promise(r => setTimeout(r, 1200));
         
         const finalImage = await compileSouvenir(captured, adminConfig);
@@ -117,39 +131,112 @@ export const AsciiCanvas = forwardRef<AsciiCanvasHandle, AsciiCanvasProps>(({
     const ctx = canvas.getContext('2d');
     if (!ctx) return frames[0];
 
-    if (config.layoutType === 'single') {
-        return frames[0];
-    }
-
-    // Strip Layout (Vertical 3-photo)
-    const margin = 100;
-    const gap = 40;
-    
     // Get dimensions from first frame
     const first = await loadImage(frames[0]);
     const fw = first.width;
     const fh = first.height;
 
-    canvas.width = fw + (margin * 2);
-    canvas.height = (fh * 3) + (gap * 2) + (margin * 2.5); // extra for branding
+    // Handle Single vs Strip
+    if (config.layoutType === 'single') {
+        canvas.width = fw;
+        canvas.height = fh;
+        
+        const img = await loadImage(frames[0]);
+        ctx.drawImage(img, 0, 0);
+    } else {
+        // Strip Layout (Vertical 3-photo)
+        const margin = 100;
+        const gap = 40;
+        canvas.width = fw + (margin * 2);
+        canvas.height = (fh * 3) + (gap * 2) + (margin * 2.5); // extra for branding
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        for (let i = 0; i < frames.length; i++) {
+            const img = await loadImage(frames[i]);
+            ctx.drawImage(img, margin, margin + (i * (fh + gap)));
+        }
 
-    // White Background
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Draw Frames
-    for (let i = 0; i < frames.length; i++) {
-        const img = await loadImage(frames[i]);
-        ctx.drawImage(img, margin, margin + (i * (fh + gap)));
+        if (config.watermarkEnabled) {
+            ctx.fillStyle = '#fdb2ca';
+            ctx.font = `black ${Math.floor(canvas.width * 0.04)}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.fillText('facetocode.', canvas.width / 2, canvas.height - (margin / 2));
+        }
     }
 
-    // Branding
-    if (config.watermarkEnabled) {
-        ctx.fillStyle = '#fdb2ca'; // Soft Pink
-        ctx.font = `black ${Math.floor(canvas.width * 0.04)}px sans-serif`;
+    // --- Aesthetic Overlays (Applied to the whole final canvas) ---
+
+    // 1. Film Border
+    if (options.showFilmBorder) {
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = Math.min(canvas.width, canvas.height) * 0.08;
+        ctx.strokeRect(0, 0, canvas.width, canvas.height);
+        
+        // Add subtle film-style notches
+        ctx.fillStyle = 'rgba(0,0,0,0.05)';
+        for (let i = 0; i < 8; i++) {
+            ctx.fillRect(5, (canvas.height / 8) * i + 10, 10, 20);
+            ctx.fillRect(canvas.width - 15, (canvas.height / 8) * i + 10, 10, 20);
+        }
+    }
+
+    // 2. Stickers
+    if (options.stickers && options.stickers.length > 0) {
         ctx.textAlign = 'center';
-        ctx.fillText('facetocode.', canvas.width / 2, canvas.height - (margin / 2));
+        ctx.textBaseline = 'middle';
+        options.stickers.forEach(s => {
+            const x = s.x * canvas.width;
+            const y = s.y * canvas.height;
+            const size = s.size * (canvas.width * 0.1);
+            
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate((s.rotation * Math.PI) / 180);
+            ctx.font = `${size}px sans-serif`;
+            ctx.fillText(s.emoji, 0, 0);
+            ctx.restore();
+        });
     }
+
+    // 3. Date Stamp
+    if (options.showDateStamp) {
+        const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const timeStr = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+        ctx.fillStyle = '#ff71a2'; // Aesthetic Pink
+        ctx.font = `900 ${Math.floor(canvas.width * 0.03)}px monospace`;
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(`'${dateStr.toUpperCase()}  ${timeStr}`, canvas.width - (canvas.width * 0.05), canvas.height - (canvas.height * 0.05));
+    }
+
+    // 4. Doodles
+    if (options.doodlePaths && options.doodlePaths.length > 0) {
+        ctx.strokeStyle = '#ff71a2';
+        ctx.lineWidth = canvas.width * 0.008;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        options.doodlePaths.forEach(path => {
+            if (path.length < 2) return;
+            ctx.beginPath();
+            ctx.moveTo(path[0].x * canvas.width, path[0].y * canvas.height);
+            for (let i = 1; i < path.length; i++) {
+                ctx.lineTo(path[i].x * canvas.width, path[i].y * canvas.height);
+            }
+            ctx.stroke();
+        });
+    }
+
+    // 5. Dynamic Color Grading (Subtle Session Tint)
+    ctx.save();
+    ctx.globalCompositeOperation = 'soft-light';
+    const hues = [330, 280, 200, 30]; // Pink, Purple, Blue, Gold
+    const selectedHue = hues[Math.floor(Math.random() * hues.length)];
+    ctx.fillStyle = `hsla(${selectedHue}, 100%, 70%, 0.15)`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
 
     return canvas.toDataURL('image/png');
   };
@@ -307,15 +394,71 @@ export const AsciiCanvas = forwardRef<AsciiCanvasHandle, AsciiCanvasProps>(({
     }
   }
 
+  const moveSticker = (id: string, x: number, y: number) => {
+    if (!setOptions) return;
+    setOptions(prev => ({
+      ...prev,
+      stickers: prev.stickers?.map(s => s.id === id ? { ...s, x, y } : s)
+    }));
+  };
+
+  const removeSticker = (id: string) => {
+    if (!setOptions) return;
+    setOptions(prev => ({
+      ...prev,
+      stickers: prev.stickers?.filter(s => s.id !== id)
+    }));
+  };
+
+  const updateStickerSize = (id: string, delta: number) => {
+    if (!setOptions) return;
+    setOptions(prev => ({
+      ...prev,
+      stickers: prev.stickers?.map(s => s.id === id ? { ...s, size: Math.max(0.5, Math.min(3, s.size + delta)) } : s)
+    }));
+  };
+
+  const addDoodlePoint = (x: number, y: number) => {
+    if (!setOptions) return;
+    setOptions(prev => {
+      const paths = [...(prev.doodlePaths || [])];
+      if (paths.length === 0) paths.push([]);
+      paths[paths.length - 1].push({ x, y });
+      return { ...prev, doodlePaths: paths };
+    });
+  };
+
+  const startNewDoodlePath = () => {
+    if (!setOptions) return;
+    setOptions(prev => ({
+      ...prev,
+      doodlePaths: [...(prev.doodlePaths || []), []]
+    }));
+  };
+
   const getThemeFilter = () => {
+    let base = 'none';
     switch (options.theme) {
-      case 'pink': return 'sepia(0.3) hue-rotate(-30deg) saturate(1.4) brightness(1.1)';
-      case 'dreamy': return 'blur(0.4px) brightness(1.1) contrast(0.9) saturate(1.1)';
-      case 'noir': return 'grayscale(1) contrast(1.2) brightness(1.05)';
-      case 'pastel': return 'saturate(0.6) brightness(1.15) contrast(0.85)';
-      case 'sparkle': return 'brightness(1.2) contrast(1.1)';
-      default: return 'none';
+      case 'pink': base = 'sepia(0.3) hue-rotate(-30deg) saturate(1.4) brightness(1.1)'; break;
+      case 'dreamy': base = 'blur(0.4px) brightness(1.1) contrast(0.9) saturate(1.1)'; break;
+      case 'noir': base = 'grayscale(1) contrast(1.2) brightness(1.05)'; break;
+      case 'pastel': base = 'saturate(0.6) brightness(1.15) contrast(0.85)'; break;
+      case 'sparkle': base = 'brightness(1.2) contrast(1.1)'; break;
     }
+
+    let overlay = 'none';
+    switch (options.filter) {
+      case 'vintage': overlay = 'sepia(0.5) contrast(1.1) brightness(0.9) saturate(0.8)'; break;
+      case 'soft_pink': overlay = 'hue-rotate(-10deg) saturate(1.2) brightness(1.05) contrast(0.95)'; break;
+      case 'cool_blue': overlay = 'hue-rotate(180deg) saturate(0.7) brightness(1.1)'; break;
+      case 'dreamy': overlay = 'blur(1px) brightness(1.2) contrast(0.8)'; break;
+      case 'noir': overlay = 'grayscale(1) contrast(1.4) brightness(0.95)'; break;
+    }
+
+    if (base === 'none' && overlay === 'none') return 'none';
+    if (base === 'none') return overlay;
+    if (overlay === 'none') return base;
+    return `${base} ${overlay}`;
   };
 
   return (
@@ -334,6 +477,73 @@ export const AsciiCanvas = forwardRef<AsciiCanvasHandle, AsciiCanvasProps>(({
                 filter: getThemeFilter(),
             }}
         />
+
+        {/* Sticker Layer */}
+        <div className="absolute inset-0 z-40 pointer-events-none">
+           {options.stickers?.map(sticker => (
+             <div 
+               key={sticker.id}
+               className="absolute pointer-events-auto cursor-move select-none group"
+               style={{ 
+                 left: `${sticker.x * 100}%`, 
+                 top: `${sticker.y * 100}%`,
+                 transform: `translate(-50%, -50%) scale(${sticker.size}) rotate(${sticker.rotation}deg)`
+               }}
+               onPointerDown={(e) => {
+                  const rect = e.currentTarget.parentElement?.getBoundingClientRect();
+                  if (!rect) return;
+                  const moveHandler = (moveEvent: PointerEvent) => {
+                    const x = (moveEvent.clientX - rect.left) / rect.width;
+                    const y = (moveEvent.clientY - rect.top) / rect.height;
+                    moveSticker(sticker.id, x, y);
+                  };
+                  window.addEventListener('pointermove', moveHandler);
+                  window.addEventListener('pointerup', () => window.removeEventListener('pointermove', moveHandler), { once: true });
+               }}
+             >
+                <span className="text-4xl drop-shadow-lg">{sticker.emoji}</span>
+                {/* Minimal Controls */}
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 backdrop-blur-md rounded-full px-2 py-1 shadow-sm border border-slate-100">
+                    <button onClick={(e) => { e.stopPropagation(); updateStickerSize(sticker.id, 0.1); }} className="p-1 hover:text-pink-500 text-[10px] font-bold">+</button>
+                    <button onClick={(e) => { e.stopPropagation(); updateStickerSize(sticker.id, -0.1); }} className="p-1 hover:text-pink-500 text-[10px] font-bold">-</button>
+                    <div className="w-[1px] h-3 bg-slate-100 mx-1" />
+                    <button onClick={(e) => { e.stopPropagation(); removeSticker(sticker.id); }} className="p-1 hover:text-red-500 text-[10px] font-bold">×</button>
+                </div>
+             </div>
+           ))}
+        </div>
+
+        {/* Doodle Layer */}
+        <svg 
+           className="absolute inset-0 z-30 pointer-events-auto cursor-crosshair"
+           onPointerDown={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const x = (e.clientX - rect.left) / rect.width;
+              const y = (e.clientY - rect.top) / rect.height;
+              startNewDoodlePath();
+              addDoodlePoint(x, y);
+              
+              const moveHandler = (moveEvent: PointerEvent) => {
+                const mx = (moveEvent.clientX - rect.left) / rect.width;
+                const my = (moveEvent.clientY - rect.top) / rect.height;
+                addDoodlePoint(mx, my);
+              };
+              window.addEventListener('pointermove', moveHandler);
+              window.addEventListener('pointerup', () => window.removeEventListener('pointermove', moveHandler), { once: true });
+           }}
+        >
+           {options.doodlePaths?.map((path, i) => (
+             <path 
+               key={i}
+               d={path.map((p, j) => `${j === 0 ? 'M' : 'L'} ${p.x * 100}% ${p.y * 100}%`).join(' ')}
+               fill="none"
+               stroke="#ff71a2"
+               strokeWidth="4"
+               strokeLinecap="round"
+               strokeLinejoin="round"
+             />
+           ))}
+        </svg>
         
         {/* Subtle Overlays */}
         <div className="absolute inset-0 pointer-events-none border-[32px] border-white/10" />

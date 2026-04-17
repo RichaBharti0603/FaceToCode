@@ -1,3 +1,20 @@
+export type AestheticFilter = 'none' | 'vintage' | 'soft_pink' | 'cool_blue' | 'dreamy' | 'noir';
+export type CaptureMode = 'photo' | 'gif';
+
+export interface Sticker {
+  id: string;
+  emoji: string;
+  x: number;
+  y: number;
+  size: number;
+  rotation: number;
+}
+
+export interface DoodlePoint {
+  x: number;
+  y: number;
+}
+
 export interface AsciiOptions {
   fontSize: number;
   brightness: number;
@@ -7,6 +24,12 @@ export interface AsciiOptions {
   resolution: number; 
   theme: 'pink' | 'dreamy' | 'noir' | 'pastel' | 'sparkle' | 'none';
   autoEmotion?: boolean;
+  filter?: AestheticFilter;
+  captureMode?: CaptureMode;
+  showDateStamp?: boolean;
+  showFilmBorder?: boolean;
+  stickers?: Sticker[];
+  doodlePaths?: DoodlePoint[][];
 }
 
 export interface AnalysisResult {
