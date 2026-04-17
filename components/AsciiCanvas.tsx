@@ -8,6 +8,7 @@ import { CaptionOverlay } from './CaptionOverlay';
 import { detectEmotion } from '../services/geminiService';
 import { trackEvent } from '../services/analyticsService';
 import { AsciiFrame } from '../core/types';
+import { getOrInitializeUserId } from '../utils/identity';
 
 interface AsciiCanvasProps {
   options: AsciiOptions;
@@ -209,10 +210,17 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({
         .map(row => row.join(''))
         .join('\n');
 
+      const previewImage = canvasRef.current?.toDataURL('image/png');
+      const userId = getOrInitializeUserId();
+
       const response = await fetch('/api/snapshot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: asciiString })
+        body: JSON.stringify({ 
+          content: asciiString,
+          user_id: userId,
+          preview_image: previewImage
+        })
       });
 
       if (!response.ok) throw new Error("Upload Failed");
@@ -224,8 +232,7 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({
       alert(`NEURAL FRAGMENT PERSISTED.\nLINK COPIED TO CLIPBOARD:\n${shareUrl}`);
       
       // Track session event
-      const analyticEvent: any = 'screenshot_taken'; // Reuse or define new
-      trackEvent(analyticEvent, { type: 'shareable', id });
+      trackEvent('snapshot_shared', { id, userId });
     } catch (err) {
       alert("CRITICAL ERROR: DATA PERSISTENCE FAILED.");
       console.error(err);

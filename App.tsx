@@ -5,12 +5,13 @@ import { AnalysisModal } from './components/AnalysisModal';
 import { AsciiOptions, AnalysisResult } from './types';
 import { AppState, CameraDevice } from './core/types';
 import { analyzeImage } from './services/geminiService';
-import { Camera, Terminal, Zap, ScanEye } from 'lucide-react';
+import { Camera, Terminal, Zap, ScanEye, Archive } from 'lucide-react';
 import { playAnalysisStartSound, playAnalysisCompleteSound } from './utils/soundEffects';
 import { LandingScreen } from './components/LandingScreen';
 import { trackEvent } from './services/analyticsService';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Link } from 'react-router-dom';
 import { SnapshotView } from './components/SnapshotView';
+import { Dashboard } from './components/Dashboard';
 
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>('landing');
@@ -78,6 +79,7 @@ const App: React.FC = () => {
   return (
     <Routes>
       <Route path="/s/:id" element={<SnapshotView />} />
+      <Route path="/my" element={<Dashboard />} />
       <Route path="/" element={
         <div className="relative w-full h-screen bg-black overflow-hidden flex flex-col">
           {appState !== 'active' ? (
@@ -94,10 +96,15 @@ const App: React.FC = () => {
                   <Terminal className="w-6 h-6 animate-pulse" />
                   <h1 className="text-xl font-bold tracking-widest uppercase">FaceToCode<span className="text-xs ml-1 opacity-70 italic">v2.0</span></h1>
                 </div>
-                <div className="text-green-800 text-xs flex gap-4 font-mono">
-                  <span>SYS.STATUS: ONLINE</span>
-                  <span>CAM.FEED: {selectedCameraId ? 'TRACKING' : 'ACTIVE'}</span>
-                  <span className="animate-pulse">LATENCY: {(Math.random() * 50).toFixed(1)}ms</span>
+                <div className="flex items-center gap-6 pointer-events-auto">
+                    <Link to="/my" className="flex items-center gap-2 text-green-600 hover:text-green-400 text-[10px] uppercase font-bold tracking-widest transition-colors">
+                        <Archive className="w-3 h-3" /> My Archives
+                    </Link>
+                    <div className="text-green-800 text-xs hidden md:flex gap-4 font-mono">
+                      <span>SYS.STATUS: ONLINE</span>
+                      <span>CAM.FEED: {selectedCameraId ? 'TRACKING' : 'ACTIVE'}</span>
+                      <span className="animate-pulse">LATENCY: {(Math.random() * 50).toFixed(1)}ms</span>
+                    </div>
                 </div>
               </header>
 
