@@ -23,6 +23,24 @@ export const DENSITY_MAPS = {
   sparkle: " .·:+*", 
 };
 
+export type PhotoboothState = 'landing' | 'live' | 'countdown' | 'review' | 'delivery';
+
+export interface AdminConfig {
+  countdownDuration: number;
+  photosPerSession: number;
+  layoutType: 'single' | 'strip';
+  watermarkEnabled: boolean;
+  autoResetEnabled: boolean;
+}
+
+export const DEFAULT_ADMIN_CONFIG: AdminConfig = {
+  countdownDuration: 3,
+  photosPerSession: 3,
+  layoutType: 'strip',
+  watermarkEnabled: true,
+  autoResetEnabled: true
+};
+
 export interface VisualPreset {
   id: string;
   name: string;
