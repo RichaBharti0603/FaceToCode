@@ -52,8 +52,12 @@ export class FrameProcessor {
     }
 
     // 3. Draw and Extract Pixels
-    // Mirror the video if needed (usually webcam feels better mirrored)
+    // Mirror the video if needed
     processingCtx.save();
+    
+    // Aesthetic Boost: Apply slight blur to smooth out gradients before sampling
+    processingCtx.filter = 'blur(1.5px)';
+    
     processingCtx.scale(-1, 1);
     processingCtx.translate(-cols, 0);
     processingCtx.drawImage(video, 0, 0, cols, rows);
@@ -62,9 +66,18 @@ export class FrameProcessor {
     const imageData = processingCtx.getImageData(0, 0, cols, rows);
     const data = imageData.data;
 
-    // 4. Calculate Brightness and Apply Temporal Smoothing
-    // smoothing 0.0 = no smoothing, 1.0 = static
-    const inertia = 0.82; // Slightly higher for smoother, dreamy transition
+    // 4. Calculate Frame Statistics for Adaptive Brightness
+    let totalLuminance = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      totalLuminance += 0.2126 * data[i] + 0.7152 * data[i+1] + 0.0722 * data[i+2];
+    }
+    const avgLuminance = totalLuminance / (cols * rows);
+    // Target avg luminance is ~128 (middle gray). 
+    // Correction factor is limited to avoid extreme blowing out.
+    const adaptiveFactor = Math.min(1.5, Math.max(0.7, 128 / (avgLuminance || 1)));
+
+    // 5. Calculate Brightness and apply Aesthetic weighting
+    const inertia = 0.82; 
     const contrastFactor = (259 * (options.contrast * 255 + 255)) / (255 * (259 - options.contrast * 255));
     
     const chars: string[][] = [];
@@ -75,15 +88,28 @@ export class FrameProcessor {
       const row: string[] = [];
       for (let x = 0; x < cols; x++) {
         const i = (y * cols + x) * 4;
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
+        let r = data[i];
+        let g = data[i + 1];
+        let b = data[i + 2];
 
         // Rec. 709 luminance
         let brightness = 0.2126 * r + 0.7152 * g + 0.0722 * b;
         
-        // Aesthetic Normalization: Lift the shadows slightly so faces don't disappear
-        brightness = Math.max(20, brightness); // Never pure black
+        // --- Aesthetic Enhancements ---
+        
+        // A. Adaptive Auto-Exposure
+        brightness *= adaptiveFactor;
+
+        // B. Face-Centered Focus (Vignette)
+        // distance from center (0.0 to 1.41)
+        const dx = (x / cols) - 0.5;
+        const dy = (y / rows) - 0.5;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const vignette = 1.0 - (dist * 0.3); // Brighten center, slightly dim edges
+        brightness *= vignette;
+
+        // C. Shadow Lifting
+        brightness = Math.max(20, brightness); 
 
         // Application of options
         brightness = contrastFactor * (brightness - 128) + 128;
@@ -102,10 +128,10 @@ export class FrameProcessor {
         const charIndex = Math.floor((smoothed / 255) * mapLen);
         row.push(densityMap[charIndex]);
         
-        // Save colors
-        colorBuffer[i] = r;
-        colorBuffer[i + 1] = g;
-        colorBuffer[i + 2] = b;
+        // Save colors (with adaptive correction)
+        colorBuffer[i] = Math.min(255, r * adaptiveFactor);
+        colorBuffer[i + 1] = Math.min(255, g * adaptiveFactor);
+        colorBuffer[i + 2] = Math.min(255, b * adaptiveFactor);
         colorBuffer[i + 3] = 255;
       }
       chars.push(row);

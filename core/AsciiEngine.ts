@@ -105,7 +105,7 @@ export class AsciiEngine {
     this.events.onFrame?.(asciiFrame);
 
     // 3. Render to Canvas
-    this.renderer.render(this.canvas, video, asciiFrame, this.options);
+    this.renderer.render(this.canvas, video, asciiFrame, this.options, performance.now());
 
     // 4. Pump to Recorder if active
     if (this.recorder.isRecording()) {

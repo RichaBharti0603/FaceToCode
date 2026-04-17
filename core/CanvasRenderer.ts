@@ -19,7 +19,8 @@ export class CanvasRenderer {
     canvas: HTMLCanvasElement,
     video: HTMLVideoElement,
     frame: AsciiFrame,
-    options: AsciiOptions
+    options: AsciiOptions,
+    time: number = 0
   ): void {
     const ctx = canvas.getContext('2d', { alpha: false });
     if (!ctx || frame.width === 0) return;
@@ -46,21 +47,40 @@ export class CanvasRenderer {
     const targetCtx = isColorMode ? this.offscreenCtx : ctx;
     
     targetCtx.save();
-    targetCtx.font = `${options.fontSize}px 'JetBrains Mono', monospace`;
+    targetCtx.font = `900 ${options.fontSize}px 'JetBrains Mono', monospace`;
     targetCtx.textAlign = 'center';
     targetCtx.textBaseline = 'middle';
-    targetCtx.fillStyle = '#ffffff'; // Use white for both monochromatic and color masks
+    targetCtx.fillStyle = '#ffffff'; 
 
+    // A. Glow Implementation
+    const isDreamy = options.theme === 'dreamy' || options.theme === 'pink';
+    if (isDreamy) {
+        targetCtx.shadowBlur = options.fontSize * 0.4;
+        targetCtx.shadowColor = options.theme === 'pink' ? 'rgba(255, 113, 162, 0.8)' : 'rgba(255, 255, 255, 0.5)';
+    }
+
+    // B. Character Grid Rendering with Shimmer
     for (let x = 0; x < gridWidth; x++) {
-      const xPos = (x + 0.5) * cellWidth;
+      const xPosBase = (x + 0.5) * cellWidth;
       for (let y = 0; y < gridHeight; y++) {
-        const yPos = (y + 0.5) * cellHeight;
+        const yPosBase = (y + 0.5) * cellHeight;
+        
+        // Interactive Shimmer
+        let xPos = xPosBase;
+        let yPos = yPosBase;
+        if (time > 0) {
+            const shimmerX = Math.sin(time * 0.002 + x * 0.1 + y * 0.05) * (cellWidth * 0.1);
+            const shimmerY = Math.cos(time * 0.002 + x * 0.05 + y * 0.1) * (cellHeight * 0.1);
+            xPos += shimmerX;
+            yPos += shimmerY;
+        }
+
         targetCtx.fillText(chars[y][x], xPos, yPos);
       }
     }
     targetCtx.restore();
 
-    // 5. Final Composition for Color Mode
+    // 4. Final Composition for Color Mode
     if (isColorMode) {
       ctx.save();
       ctx.translate(width, 0);
@@ -71,6 +91,29 @@ export class CanvasRenderer {
       ctx.globalCompositeOperation = 'destination-in';
       ctx.drawImage(this.offscreenCanvas, 0, 0);
       ctx.globalCompositeOperation = 'source-over';
+    }
+
+    // 5. Meme Overlay (Viral Boost)
+    if (options.memeTextTop || options.memeTextBottom) {
+        ctx.save();
+        ctx.font = `900 ${Math.floor(width * 0.06)}px 'JetBrains Mono', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'white';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = width * 0.008;
+        ctx.lineJoin = 'round';
+
+        if (options.memeTextTop) {
+            const text = options.memeTextTop.toUpperCase();
+            ctx.strokeText(text, width / 2, height * 0.15);
+            ctx.fillText(text, width / 2, height * 0.15);
+        }
+        if (options.memeTextBottom) {
+            const text = options.memeTextBottom.toUpperCase();
+            ctx.strokeText(text, width / 2, height * 0.9);
+            ctx.fillText(text, width / 2, height * 0.9);
+        }
+        ctx.restore();
     }
   }
 }

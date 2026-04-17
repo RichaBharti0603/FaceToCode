@@ -30,6 +30,8 @@ export interface AsciiOptions {
   showFilmBorder?: boolean;
   stickers?: Sticker[];
   doodlePaths?: DoodlePoint[][];
+  memeTextTop?: string;
+  memeTextBottom?: string;
 }
 
 export interface AnalysisResult {

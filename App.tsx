@@ -107,6 +107,26 @@ const App: React.FC = () => {
     recordInteraction();
   };
 
+  const handleSurpriseMe = () => {
+    const themes: any[] = ['pink', 'dreamy', 'noir', 'pastel', 'sparkle'];
+    const filters: any[] = ['vintage', 'soft_pink', 'cool_blue', 'dreamy', 'noir'];
+    const densities: any[] = ['soft', 'airy', 'blocks', 'sparkle'];
+    
+    const randomTheme = themes[Math.floor(Math.random() * themes.length)];
+    const randomFilter = filters[Math.floor(Math.random() * filters.length)];
+    const randomDensity = densities[Math.floor(Math.random() * densities.length)];
+    
+    setOptions(prev => ({
+      ...prev,
+      theme: randomTheme,
+      filter: randomFilter,
+      density: randomDensity,
+      colorMode: Math.random() > 0.5 ? 'color' : 'bw',
+      brightness: 1.0,
+      contrast: 1.0
+    }));
+  };
+
   const handleStyleCycle = () => {
     const nextIndex = (currentPresetIndex + 1) % VISUAL_PRESETS.length;
     setCurrentPresetIndex(nextIndex);
@@ -166,14 +186,24 @@ const App: React.FC = () => {
                     <span className="text-2xl font-black tracking-tighter text-slate-900">facetocode<span className="text-pink-400">.</span></span>
                   </div>
 
-                  {/* Floating Nav Button */}
-                  <button 
-                    onClick={() => setIsNavOpen(true)}
-                    className="pointer-events-auto w-14 h-14 flex items-center justify-center bg-white/40 backdrop-blur-2xl border border-white/50 rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.05)] text-slate-900 hover:bg-white/60 transition-all hover:scale-105 active:scale-95"
-                    title="Open Navigation"
-                  >
-                     <Grid className="w-6 h-6 text-pink-500" />
-                  </button>
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-3 pointer-events-auto">
+                    <button 
+                      onClick={handleSurpriseMe}
+                      className="h-14 px-6 flex items-center justify-center bg-gradient-to-r from-pink-500 to-rose-400 text-white font-black rounded-full shadow-[0_10px_30px_rgba(244,63,94,0.3)] hover:scale-105 active:scale-95 transition-all text-sm tracking-tighter"
+                      title="Surprise Me"
+                    >
+                       Surprise ✨
+                    </button>
+
+                    <button 
+                      onClick={() => setIsNavOpen(true)}
+                      className="w-14 h-14 flex items-center justify-center bg-white/40 backdrop-blur-2xl border border-white/50 rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.05)] text-slate-900 hover:bg-white/60 transition-all hover:scale-105 active:scale-95"
+                      title="Open Navigation"
+                    >
+                       <Grid className="w-6 h-6 text-pink-500" />
+                    </button>
+                  </div>
                 </header>
 
                 <NavSheet isOpen={isNavOpen} onClose={() => setIsNavOpen(false)} />
