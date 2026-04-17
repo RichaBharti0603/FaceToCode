@@ -3,10 +3,11 @@ import { AsciiOptions } from '../types';
 import { AsciiEngine } from '../core/AsciiEngine';
 import { CameraDevice } from '../core/types';
 import { playStartupSound, playScanSound, startAmbientHum, stopAmbientHum, playAnalysisStartSound, playAnalysisCompleteSound } from '../utils/soundEffects';
-import { ScanEye, Camera, Circle, Brain } from 'lucide-react';
+import { ScanEye, Camera, Circle, Brain, Share2 } from 'lucide-react';
 import { CaptionOverlay } from './CaptionOverlay';
 import { detectEmotion } from '../services/geminiService';
 import { trackEvent } from '../services/analyticsService';
+import { AsciiFrame } from '../core/types';
 
 interface AsciiCanvasProps {
   options: AsciiOptions;
@@ -28,7 +29,9 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({
   isHDEnabled
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const latestFrameRef = useRef<AsciiFrame | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   // Emotion Detection Loop
@@ -74,6 +77,9 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({
 
   // Initialize Engine
   const engine = useMemo(() => new AsciiEngine(options, {
+    onFrame: (frame) => {
+      latestFrameRef.current = frame;
+    },
     onStateChange: (state) => {
       if (state === 'error') setError("Neural link failed. Check camera permissions.");
       else setError(null);
@@ -192,6 +198,42 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({
     }
   };
 
+  const handleShareSnapshot = async () => {
+    if (!latestFrameRef.current || isSharing) return;
+
+    setIsSharing(true);
+    playScanSound();
+
+    try {
+      const asciiString = latestFrameRef.current.chars
+        .map(row => row.join(''))
+        .join('\n');
+
+      const response = await fetch('/api/snapshot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: asciiString })
+      });
+
+      if (!response.ok) throw new Error("Upload Failed");
+      
+      const { id } = await response.json();
+      const shareUrl = `${window.location.origin}/s/${id}`;
+      
+      await navigator.clipboard.writeText(shareUrl);
+      alert(`NEURAL FRAGMENT PERSISTED.\nLINK COPIED TO CLIPBOARD:\n${shareUrl}`);
+      
+      // Track session event
+      const analyticEvent: any = 'screenshot_taken'; // Reuse or define new
+      trackEvent(analyticEvent, { type: 'shareable', id });
+    } catch (err) {
+      alert("CRITICAL ERROR: DATA PERSISTENCE FAILED.");
+      console.error(err);
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
   return (
     <div className="relative w-full h-full bg-black">
       {error && (
@@ -219,6 +261,16 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({
           title="Save Snapshot"
         >
           <Camera className="w-6 h-6" />
+        </button>
+
+        {/* Share Snapshot (NEW) */}
+        <button 
+          onClick={handleShareSnapshot}
+          disabled={isSharing}
+          className={`bg-black/60 ${isSharing ? 'text-yellow-500 animate-pulse' : 'text-yellow-400'} border border-yellow-500/50 p-4 rounded-full backdrop-blur-md transition-all active:scale-95 hover:scale-105 hover:shadow-[0_0_15px_rgba(255,200,0,0.3)]`}
+          title="Generate Share Link"
+        >
+          <Share2 className={`w-6 h-6 ${isSharing ? 'animate-bounce' : ''}`} />
         </button>
 
         {/* Scan & Analyze Button (Primary) */}
