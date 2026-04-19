@@ -1,3 +1,75 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-['Inter'] text-slate-800 bg-white selection:bg-pink-100;
+  }
+  h1, h2, h3, h4, .font-heading {
+    @apply font-['Outfit'] tracking-tighter;
+  }
+}
+
+@layer components {
+  /* Pinterest-core Gradients */
+  .bg-soft-pink {
+    background: linear-gradient(135deg, #fffafd 0%, #fff1f2 50%, #f5f3ff 100%);
+  }
+  .bg-soft-peach {
+    background: linear-gradient(135deg, #fffaf5 0%, #ffedd5 50%, #fee2e2 100%);
+  }
+  .bg-soft-lilac {
+    background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 50%, #eff6ff 100%);
+  }
+
+  /* Glassmorphism system */
+  .glass-panel {
+    @apply backdrop-blur-[40px] bg-white/40 border border-white/60 shadow-[0_20px_120px_rgba(244,63,94,0.06)];
+  }
+  .glass-button {
+    @apply backdrop-blur-2xl bg-white/50 border border-white/70 shadow-sm transition-all duration-500 hover:scale-105 active:scale-95;
+  }
+  
+  /* Noise/Grain Overlay */
+  .grain-overlay {
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    right: -50%;
+    bottom: -50%;
+    width: 200%;
+    height: 200%;
+    background: transparent url('https://grain-y.com/assets/images/noise.png') repeat;
+    background-size: 150px 150px;
+    opacity: 0.05;
+    pointer-events: none;
+    z-index: 9999;
+    animation: noise 0.2s infinite;
+  }
+}
+
+@keyframes noise {
+  0% { transform: translate(0,0) }
+  10% { transform: translate(-5%,-5%) }
+  20% { transform: translate(-10%,5%) }
+  30% { transform: translate(5%,-10%) }
+  40% { transform: translate(-5%,15%) }
+  50% { transform: translate(-10%,5%) }
+  60% { transform: translate(15%,0) }
+  70% { transform: translate(0,10%) }
+  80% { transform: translate(-15%,0) }
+  90% { transform: translate(10%,5%) }
+  100% { transform: translate(5%,0) }
+}
+
+@keyframes float-blob {
+  0% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+.animate-blob {
+  animation: float-blob 7s infinite alternate ease-in-out;
+}

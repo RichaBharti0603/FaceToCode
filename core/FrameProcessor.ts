@@ -52,15 +52,14 @@ export class FrameProcessor {
     }
 
     // 3. Draw and Extract Pixels
-    // Mirror the video if needed
     processingCtx.save();
-    
-    // Aesthetic Boost: Apply slight blur to smooth out gradients before sampling
-    processingCtx.filter = 'blur(1.5px)';
-    
     processingCtx.scale(-1, 1);
     processingCtx.translate(-cols, 0);
+    
+    // Aesthetic Boost: Higher smoothing for skin tones
+    processingCtx.filter = 'blur(1.8px) contrast(1.05) brightness(1.1)';
     processingCtx.drawImage(video, 0, 0, cols, rows);
+    processingCtx.filter = 'none';
     processingCtx.restore();
 
     const imageData = processingCtx.getImageData(0, 0, cols, rows);
@@ -69,15 +68,14 @@ export class FrameProcessor {
     // 4. Calculate Frame Statistics for Adaptive Brightness
     let totalLuminance = 0;
     for (let i = 0; i < data.length; i += 4) {
-      totalLuminance += 0.2126 * data[i] + 0.7152 * data[i+1] + 0.0722 * data[i+2];
+      // Skin-Biased Luminance Weighting (R/G primary)
+      totalLuminance += 0.5 * data[i] + 0.4 * data[i+1] + 0.1 * data[i+2];
     }
     const avgLuminance = totalLuminance / (cols * rows);
-    // Target avg luminance is ~128 (middle gray). 
-    // Correction factor is limited to avoid extreme blowing out.
-    const adaptiveFactor = Math.min(1.5, Math.max(0.7, 128 / (avgLuminance || 1)));
+    const adaptiveFactor = Math.min(1.4, Math.max(0.8, 140 / (avgLuminance || 1)));
 
     // 5. Calculate Brightness and apply Aesthetic weighting
-    const inertia = 0.82; 
+    const inertia = 0.85; 
     const contrastFactor = (259 * (options.contrast * 255 + 255)) / (255 * (259 - options.contrast * 255));
     
     const chars: string[][] = [];
@@ -92,31 +90,34 @@ export class FrameProcessor {
         let g = data[i + 1];
         let b = data[i + 2];
 
-        // Rec. 709 luminance
-        let brightness = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-        
-        // --- Aesthetic Enhancements ---
+        // Face-Biased Luminance Weighting
+        let brightness = 0.5 * r + 0.4 * g + 0.1 * b;
         
         // A. Adaptive Auto-Exposure
         brightness *= adaptiveFactor;
 
-        // B. Face-Centered Focus (Vignette)
-        // distance from center (0.0 to 1.41)
+        // B. Face-Centered Magic Glow (Stronger falloff)
         const dx = (x / cols) - 0.5;
         const dy = (y / rows) - 0.5;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        const vignette = 1.0 - (dist * 0.3); // Brighten center, slightly dim edges
-        brightness *= vignette;
+        const centerFocus = Math.exp(-dist * 1.5) * 0.4 + 1.0; 
+        brightness *= centerFocus;
 
-        // C. Shadow Lifting
-        brightness = Math.max(20, brightness); 
+        // C. Shadow Lifting & Range Clamping (Light Mode Optimized)
+        if (options.lightMode) {
+          // Compress contrast for airy, eye-comfortable look
+          brightness = brightness * 0.6 + 80;
+          brightness = Math.max(90, Math.min(240, brightness));
+        } else {
+          brightness = Math.max(30, Math.min(235, brightness)); 
+        }
 
         // Application of options
         brightness = contrastFactor * (brightness - 128) + 128;
         brightness *= options.brightness;
         brightness = Math.max(0, Math.min(255, brightness));
 
-        // Temporal Smoothing
+        // Temporal Smoothing (higher inertia for silkier video)
         const idx = y * cols + x;
         const prev = prevBrightnessBuffer[idx];
         const smoothed = prev + (brightness - prev) * (1 - inertia);
@@ -128,10 +129,10 @@ export class FrameProcessor {
         const charIndex = Math.floor((smoothed / 255) * mapLen);
         row.push(densityMap[charIndex]);
         
-        // Save colors (with adaptive correction)
-        colorBuffer[i] = Math.min(255, r * adaptiveFactor);
+        // Save colors with subtle skin-tone warming
+        colorBuffer[i] = Math.min(255, r * adaptiveFactor * 1.05); // Warmth
         colorBuffer[i + 1] = Math.min(255, g * adaptiveFactor);
-        colorBuffer[i + 2] = Math.min(255, b * adaptiveFactor);
+        colorBuffer[i + 2] = Math.min(255, b * adaptiveFactor * 0.95); // Reduce blue
         colorBuffer[i + 3] = 255;
       }
       chars.push(row);

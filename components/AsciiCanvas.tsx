@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useMemo, forwardRef, useImperativeHandle } from 'react';
+import { Camera, Heart, Sparkles } from 'lucide-react';
 import { AsciiOptions, AdminConfig } from '../types';
 import { AsciiEngine } from '../core/AsciiEngine';
 import { CameraDevice } from '../core/types';
@@ -85,12 +86,9 @@ export const AsciiCanvas = forwardRef<AsciiCanvasHandle, AsciiCanvasProps>(({
           if (navigator.vibrate) navigator.vibrate(50);
           
           const flash = document.createElement('div');
-          flash.className = 'fixed inset-0 bg-white z-[999] opacity-100 transition-opacity duration-500';
+          flash.className = 'fixed inset-0 bg-rose-200/40 backdrop-blur-md z-[999] animate-fadeOut';
           document.body.appendChild(flash);
-          requestAnimationFrame(() => {
-              flash.style.opacity = '0';
-              setTimeout(() => document.body.removeChild(flash), 500);
-          });
+          setTimeout(() => document.body.removeChild(flash), 500);
         }
 
         for (let i = 0; i < framesToCapture; i++) {
@@ -159,10 +157,10 @@ export const AsciiCanvas = forwardRef<AsciiCanvasHandle, AsciiCanvasProps>(({
         }
 
         if (config.watermarkEnabled) {
-            ctx.fillStyle = '#fdb2ca';
-            ctx.font = `black ${Math.floor(canvas.width * 0.04)}px sans-serif`;
+            ctx.fillStyle = '#fda4af'; // rose-300
+            ctx.font = `900 ${Math.floor(canvas.width * 0.045)}px Outfit`;
             ctx.textAlign = 'center';
-            ctx.fillText('facetocode.', canvas.width / 2, canvas.height - (margin / 2));
+            ctx.fillText('facetocode.', canvas.width / 2, canvas.height - (margin * 0.4));
         }
     }
 
@@ -546,7 +544,12 @@ export const AsciiCanvas = forwardRef<AsciiCanvasHandle, AsciiCanvasProps>(({
         </svg>
         
         {/* Subtle Overlays */}
-        <div className="absolute inset-0 pointer-events-none border-[32px] border-white/10" />
+        <div className="absolute inset-x-0 bottom-12 flex justify-center pointer-events-none z-50 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500">
+           <div className="px-6 py-2 bg-white/20 backdrop-blur-md rounded-full border border-white/30 text-[10px] font-black uppercase tracking-[0.4em] text-white/60 lowercase">
+              you but make it code 💻✨
+           </div>
+        </div>
+        <div className="absolute inset-0 pointer-events-none border-[32px] border-white/5 opacity-40" />
       </div>
 
       {/* Countdown Overlay */}
@@ -560,9 +563,12 @@ export const AsciiCanvas = forwardRef<AsciiCanvasHandle, AsciiCanvasProps>(({
 
       {/* Processing Overlay */}
       {isProcessingLayout && (
-        <div className="absolute inset-0 z-[300] bg-white/80 backdrop-blur-xl flex flex-col items-center justify-center">
-            <div className="w-12 h-12 border-4 border-pink-100 border-t-pink-500 rounded-full animate-spin mb-4" />
-            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-pink-500">Stitching Souvenir...</p>
+        <div className="absolute inset-0 z-[300] bg-white/40 backdrop-blur-3xl flex flex-col items-center justify-center">
+            <div className="relative">
+                <div className="w-16 h-16 border-4 border-rose-100 border-t-rose-400 rounded-full animate-spin" />
+                <Sparkles className="absolute -top-4 -right-4 w-6 h-6 text-rose-300 animate-pulse" />
+            </div>
+            <p className="mt-8 text-[11px] font-black uppercase tracking-[0.4em] text-rose-400 lowercase animate-pulse">making it cute… 💭</p>
         </div>
       )}
       

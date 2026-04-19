@@ -1,4 +1,4 @@
-export type AestheticFilter = 'none' | 'vintage' | 'soft_pink' | 'cool_blue' | 'dreamy' | 'noir';
+export type AestheticFilter = 'none' | 'vintage' | 'soft_pink' | 'cool_blue' | 'dreamy' | 'paris_glow' | 'seoul_dream' | 'noir';
 export type CaptureMode = 'photo' | 'gif';
 
 export interface Sticker {
@@ -20,7 +20,7 @@ export interface AsciiOptions {
   brightness: number;
   contrast: number;
   colorMode: 'bw' | 'color';
-  density: 'soft' | 'airy' | 'binary' | 'blocks' | 'sparkle';
+  density: 'soft' | 'airy' | 'binary' | 'blocks' | 'sparkle' | 'premium_soft' | 'ultra_soft';
   resolution: number; 
   theme: 'pink' | 'dreamy' | 'noir' | 'pastel' | 'sparkle' | 'none';
   autoEmotion?: boolean;
@@ -32,6 +32,8 @@ export interface AsciiOptions {
   doodlePaths?: DoodlePoint[][];
   memeTextTop?: string;
   memeTextBottom?: string;
+  lightMode?: boolean;
+  backgroundColor?: string;
 }
 
 export interface AnalysisResult {
@@ -46,6 +48,8 @@ export const DENSITY_MAPS = {
   binary: " 01",
   blocks: " ░▒▓█",
   sparkle: " .·:+*", 
+  premium_soft: " . · : * +",
+  ultra_soft: "  .  ·  "
 };
 
 export type PhotoboothState = 'landing' | 'live' | 'countdown' | 'review' | 'delivery';
@@ -74,14 +78,24 @@ export interface VisualPreset {
 
 export const VISUAL_PRESETS: VisualPreset[] = [
   { 
+    id: 'seoul_dream', 
+    name: 'Seoul Dream ☁️', 
+    options: { lightMode: true, theme: 'dreamy', colorMode: 'color', density: 'ultra_soft', fontSize: 13, resolution: 0.12, contrast: 0.6, brightness: 1.3, filter: 'seoul_dream', backgroundColor: '#f3e8ff' } 
+  },
+  { 
+    id: 'blush_vibe', 
+    name: 'Blush Pink 🌸', 
+    options: { lightMode: true, theme: 'pink', colorMode: 'color', density: 'premium_soft', fontSize: 11, resolution: 0.18, contrast: 0.7, brightness: 1.25, filter: 'paris_glow', backgroundColor: '#ffe4ec' } 
+  },
+  { 
+    id: 'paris_glow', 
+    name: 'Paris Glow 🌸', 
+    options: { theme: 'pink', colorMode: 'color', density: 'premium_soft', fontSize: 10, resolution: 0.18, contrast: 0.75, brightness: 1.25, filter: 'paris_glow' } 
+  },
+  { 
     id: 'soft_pink', 
     name: 'Soft Pink ✨', 
     options: { theme: 'pink', colorMode: 'color', density: 'soft', fontSize: 10, resolution: 0.18, contrast: 0.9, brightness: 1.1 } 
-  },
-  { 
-    id: 'dreamy_cloud', 
-    name: 'Dreamy ☁️', 
-    options: { theme: 'dreamy', colorMode: 'color', density: 'airy', fontSize: 12, resolution: 0.12, contrast: 0.8, brightness: 1.2 } 
   },
   { 
     id: 'noir_classic', 

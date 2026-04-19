@@ -109,8 +109,8 @@ const App: React.FC = () => {
 
   const handleSurpriseMe = () => {
     const themes: any[] = ['pink', 'dreamy', 'noir', 'pastel', 'sparkle'];
-    const filters: any[] = ['vintage', 'soft_pink', 'cool_blue', 'dreamy', 'noir'];
-    const densities: any[] = ['soft', 'airy', 'blocks', 'sparkle'];
+    const filters: any[] = ['vintage', 'soft_pink', 'cool_blue', 'dreamy', 'paris_glow', 'seoul_dream', 'noir'];
+    const densities: any[] = ['soft', 'airy', 'blocks', 'sparkle', 'premium_soft'];
     
     const randomTheme = themes[Math.floor(Math.random() * themes.length)];
     const randomFilter = filters[Math.floor(Math.random() * filters.length)];
@@ -160,7 +160,14 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full h-screen bg-white overflow-hidden selection:bg-pink-100 font-sans cursor-crosshair">
+    <div className="relative w-full h-screen bg-soft-pink overflow-hidden selection:bg-pink-100 font-sans cursor-crosshair">
+      <div className="grain-overlay" />
+      
+      {/* Aesthetic Background Blobs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-pink-200/30 rounded-full blur-[120px] animate-blob" />
+      <div className="absolute bottom-[10%] right-[-5%] w-[35%] h-[35%] bg-purple-200/30 rounded-full blur-[100px] animate-blob" style={{ animationDelay: '2s' }} />
+      <div className="absolute top-[20%] right-[10%] w-[25%] h-[25%] bg-orange-100/40 rounded-full blur-[80px] animate-blob" style={{ animationDelay: '4s' }} />
+
       <Toaster toasts={toasts} removeToast={(id) => setToasts(t => t.filter(x => x.id !== id))} />
 
       <Routes>
@@ -182,18 +189,18 @@ const App: React.FC = () => {
                     onTouchStart={startAdminTimer}
                     onTouchEnd={clearAdminTimer}
                   >
-                    <Heart className="w-6 h-6 text-pink-400 fill-pink-100" />
-                    <span className="text-2xl font-black tracking-tighter text-slate-900">facetocode<span className="text-pink-400">.</span></span>
+                    <Heart className="w-5 h-5 text-rose-300 fill-rose-100" />
+                    <span className="text-2xl font-black tracking-tighter text-slate-900 lowercase">facetocode.</span>
                   </div>
 
                   {/* Action Buttons */}
                   <div className="flex items-center gap-3 pointer-events-auto">
                     <button 
                       onClick={handleSurpriseMe}
-                      className="h-14 px-6 flex items-center justify-center bg-gradient-to-r from-pink-500 to-rose-400 text-white font-black rounded-full shadow-[0_10px_30px_rgba(244,63,94,0.3)] hover:scale-105 active:scale-95 transition-all text-sm tracking-tighter"
+                      className="h-14 px-8 flex items-center justify-center bg-gradient-to-r from-rose-300 to-rose-400 text-white font-black rounded-full shadow-[0_15px_40px_rgba(244,63,94,0.15)] hover:scale-105 active:scale-95 transition-all text-xs tracking-[0.2em] uppercase"
                       title="Surprise Me"
                     >
-                       Surprise ✨
+                       Surprise Me 🎀
                     </button>
 
                     <button 
@@ -237,15 +244,15 @@ const App: React.FC = () => {
                   )}
 
                   {appState === 'review' && capturedSouvenir && (
-                    <div className="absolute inset-0 z-[100] bg-white/60 backdrop-blur-2xl flex items-center justify-center p-8">
-                       <div className="max-w-xl w-full flex flex-col items-center gap-12 text-center animate-in zoom-in duration-500">
-                          <h2 className="text-4xl font-extrabold tracking-tighter text-slate-900 leading-tight">Aesthetic Captured<span className="text-pink-400">.</span></h2>
+                    <div className="absolute inset-0 z-[100] bg-white/40 backdrop-blur-3xl flex items-center justify-center p-8">
+                       <div className="max-w-xl w-full flex flex-col items-center gap-10 text-center animate-in zoom-in duration-700">
+                          <h2 className="text-5xl font-black tracking-tighter text-slate-900 leading-tight lowercase">magic fragment captured<span className="text-rose-300"> 💌</span></h2>
                           <div className="p-4 bg-white shadow-2xl rounded-[2.5rem] border border-pink-100/50 rotate-[-1deg] hover:rotate-0 transition-transform duration-500">
                              <img src={capturedSouvenir} className="w-full h-auto rounded-[2rem]" alt="Souvenir" />
                           </div>
                           <div className="flex gap-4 w-full">
-                             <button onClick={() => setAppState('live')} className="flex-1 py-6 rounded-full bg-slate-100 text-slate-600 font-bold uppercase tracking-widest text-[10px] hover:bg-slate-200 transition-all">Retake</button>
-                             <button onClick={() => setAppState('delivery')} className="flex-[1.5] py-6 px-12 rounded-full bg-slate-900 text-white font-bold uppercase tracking-widest text-[10px] hover:bg-pink-500 transition-all shadow-xl">Keep Magic</button>
+                             <button onClick={() => setAppState('live')} className="flex-1 py-6 rounded-full bg-white/50 border border-white text-slate-500 font-bold uppercase tracking-[0.2em] text-[10px] hover:bg-white transition-all">Retake</button>
+                             <button onClick={() => setAppState('delivery')} className="flex-[1.5] py-6 px-12 rounded-full bg-slate-900 text-white font-bold uppercase tracking-[0.2em] text-[10px] hover:bg-rose-500 transition-all shadow-xl">Keep Magic ✨</button>
                           </div>
                        </div>
                     </div>
