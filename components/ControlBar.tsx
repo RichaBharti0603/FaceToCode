@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera, Circle, Sparkles, Sliders } from 'lucide-react';
+import { Camera, Image, FlipHorizontal } from 'lucide-react';
 import { VISUAL_PRESETS } from '../types';
 
 interface ControlBarProps {
@@ -8,72 +8,64 @@ interface ControlBarProps {
   onOpenSettings: () => void;
   onToggleRecording: () => void;
   isRecording: boolean;
-  currentPresetName: string;
+  currentPresetIndex: number;
+  onSelectPreset: (index: number) => void;
 }
 
 export const ControlBar: React.FC<ControlBarProps> = ({ 
   onCapture, 
-  onCycleStyle, 
+  onSelectPreset,
   onOpenSettings,
-  onToggleRecording,
-  isRecording,
-  currentPresetName
+  currentPresetIndex
 }) => {
   return (
-    <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-4 bg-white/40 backdrop-blur-3xl border border-white/60 rounded-full shadow-[0_30px_100px_rgba(244,63,94,0.08)]">
+    <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-8 w-full max-w-md px-6">
       
-      {/* Style Cycler */}
-      <button 
-        onClick={onCycleStyle}
-        className="flex items-center gap-4 px-8 py-5 hover:bg-white/50 rounded-full transition-all text-slate-900 group"
-      >
-        <Sparkles className="w-5 h-5 text-rose-300 fill-rose-100 group-hover:rotate-12 transition-transform" />
-        <div className="flex flex-col items-start leading-none gap-0.5">
-           <span className="text-[8px] uppercase font-bold text-rose-300 tracking-[0.4em] lowercase">aesthetic</span>
-           <span className="text-[11px] font-black tracking-tighter text-slate-800 lowercase">
-             {currentPresetName}
-           </span>
-        </div>
-      </button>
- 
-      {/* Primary Capture */}
-      <div className="relative group">
-         <div className="absolute inset-[-8px] bg-rose-200/40 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-         <button 
-           onClick={onCapture}
-           className="relative z-10 px-10 py-5 bg-slate-900 text-white rounded-full hover:scale-105 active:scale-95 transition-all shadow-xl shadow-slate-900/10 flex items-center gap-4"
-           title="Capture Magic"
-         >
-           <Camera className="w-6 h-6" />
-           <span className="text-xs font-black uppercase tracking-[0.2em] whitespace-nowrap">capture magic ✨</span>
-         </button>
+      {/* 7. FILTER SYSTEM (AESTHETIC SCROLLER) */}
+      <div className="flex items-center gap-4 overflow-x-auto py-2 no-scrollbar mask-fade-edges">
+        {VISUAL_PRESETS.map((preset, idx) => (
+          <button
+            key={preset.id}
+            onClick={() => onSelectPreset(idx)}
+            className={`
+              flex-shrink-0 w-14 h-14 rounded-full flex items-center justify-center text-xl transition-all duration-300
+              ${currentPresetIndex === idx 
+                ? 'bg-pink-400 text-white shadow-[0_10px_25px_rgba(244,114,182,0.4)] scale-110' 
+                : 'bg-white/60 backdrop-blur-xl border border-white/60 text-gray-500 hover:bg-white'}
+            `}
+            title={preset.name}
+          >
+            {preset.icon}
+          </button>
+        ))}
       </div>
- 
-      {/* Record Toggle */}
-      <button 
-        onClick={onToggleRecording}
-        className={`flex items-center gap-4 px-8 py-5 rounded-full transition-all ${isRecording ? 'bg-rose-50 text-rose-500' : 'hover:bg-white/50 text-slate-500'}`}
-        title="Record Session"
-      >
-         <Circle className={`w-5 h-5 ${isRecording ? 'fill-rose-500 animate-pulse' : ''}`} />
-         <div className="flex flex-col items-start leading-none gap-0.5">
-           <span className="text-[8px] uppercase font-bold text-slate-300 tracking-[0.4em] lowercase">capture</span>
-           <span className="text-[11px] font-black tracking-tighter lowercase">
-             {isRecording ? 'live' : 'loop'}
-           </span>
+
+      {/* 5. SHUTTER BUTTON (MAIN FOCUS) */}
+      <div className="flex items-center gap-12">
+        <button 
+          onClick={() => {/* gallery logic */}}
+          className="w-12 h-12 flex items-center justify-center bg-white/40 backdrop-blur-xl border border-white/60 rounded-full text-gray-400 hover:text-pink-400 transition-all"
+        >
+          <Image className="w-5 h-5" />
+        </button>
+
+        <div className="relative">
+           <div className="absolute inset-[-12px] bg-pink-200/20 rounded-full blur-2xl animate-pulse" />
+           <button 
+             onClick={onCapture}
+             className="relative w-[76px] h-[76px] bg-white rounded-full shadow-[0_15px_35px_rgba(0,0,0,0.1),inset_0_0_0_4px_white,inset_0_0_0_6px_rgba(0,0,0,0.05)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center group"
+           >
+             <div className="w-[60px] h-[60px] rounded-full border border-gray-100 group-hover:bg-pink-50 transition-all" />
+           </button>
         </div>
-      </button>
- 
-      <div className="w-[1px] h-10 bg-slate-200/30 mx-2" />
- 
-      {/* Advanced Settings */}
-      <button 
-        onClick={onOpenSettings}
-        className="w-14 h-14 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-white/50 rounded-full transition-all"
-        title="Settings"
-      >
-        <Sliders className="w-5 h-5" />
-      </button>
+
+        <button 
+          onClick={onOpenSettings}
+          className="w-12 h-12 flex items-center justify-center bg-white/40 backdrop-blur-xl border border-white/60 rounded-full text-gray-400 hover:text-pink-400 transition-all"
+        >
+          <FlipHorizontal className="w-5 h-5" />
+        </button>
+      </div>
     </div>
   );
 };

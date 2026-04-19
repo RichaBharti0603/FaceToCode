@@ -4,10 +4,12 @@
 
 @layer base {
   body {
-    @apply font-['Inter'] text-slate-800 bg-white selection:bg-pink-100;
+    font-family: theme('fontFamily.sans');
+    @apply text-gray-600 bg-[#fff1f5] selection:bg-pink-100;
   }
-  h1, h2, h3, h4, .font-heading {
-    @apply font-['Outfit'] tracking-tighter;
+  h1, h2, h3, h4 {
+    font-family: theme('fontFamily.heading');
+    @apply tracking-tight font-semibold;
   }
 }
 
@@ -40,9 +42,9 @@
     bottom: -50%;
     width: 200%;
     height: 200%;
-    background: transparent url('https://grain-y.com/assets/images/noise.png') repeat;
-    background-size: 150px 150px;
-    opacity: 0.05;
+    background-image: radial-gradient(rgba(0,0,0,0.03) 1px, transparent 1px);
+    background-size: 3px 3px;
+    opacity: 0.8;
     pointer-events: none;
     z-index: 9999;
     animation: noise 0.2s infinite;

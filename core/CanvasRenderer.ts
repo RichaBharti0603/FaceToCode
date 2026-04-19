@@ -10,7 +10,7 @@ export class CanvasRenderer {
 
   constructor() {
     this.offscreenCanvas = document.createElement('canvas');
-    const ctx = this.offscreenCanvas.getContext('2d', { alpha: true });
+    const ctx = this.offscreenCanvas.getContext('2d', { alpha: true, willReadFrequently: true });
     if (!ctx) throw new Error("Could not get offscreen context");
     this.offscreenCtx = ctx;
   }
@@ -22,7 +22,7 @@ export class CanvasRenderer {
     options: AsciiOptions,
     time: number = 0
   ): void {
-    const ctx = canvas.getContext('2d', { alpha: false });
+    const ctx = canvas.getContext('2d', { alpha: false, willReadFrequently: true });
     if (!ctx || frame.width === 0) return;
 
     const { width, height } = canvas;

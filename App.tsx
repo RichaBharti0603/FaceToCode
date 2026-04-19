@@ -143,85 +143,81 @@ const App: React.FC = () => {
     }
   }, [recordInteraction]);
 
-  const adminTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [isDeveloperMode, setIsDeveloperMode] = useState(false);
+  const [debugMetrics, setDebugMetrics] = useState({ fps: 0, processingTime: 0 });
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const startAdminTimer = () => {
-    adminTimerRef.current = setTimeout(() => {
-      setIsAdminOpen(true);
-      addToast("Admin Console Authorized");
+  const startLongPress = () => {
+    longPressTimerRef.current = setTimeout(() => {
+      setIsDeveloperMode(curr => !curr);
+      addToast(isDeveloperMode ? "Developer Mode Disabled" : "Developer Mode Active ✨", "info");
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
     }, 3000);
   };
 
-  const clearAdminTimer = () => {
-    if (adminTimerRef.current) {
-      clearTimeout(adminTimerRef.current);
-      adminTimerRef.current = null;
+  const endLongPress = () => {
+    if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
     }
   };
 
   return (
-    <div className="relative w-full h-screen bg-soft-pink overflow-hidden selection:bg-pink-100 font-sans cursor-crosshair">
+    <div className="relative w-full h-screen bg-[#fff1f5] overflow-hidden selection:bg-pink-100 font-sans cursor-default">
       <div className="grain-overlay" />
       
       {/* Aesthetic Background Blobs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-pink-200/30 rounded-full blur-[120px] animate-blob" />
-      <div className="absolute bottom-[10%] right-[-5%] w-[35%] h-[35%] bg-purple-200/30 rounded-full blur-[100px] animate-blob" style={{ animationDelay: '2s' }} />
-      <div className="absolute top-[20%] right-[10%] w-[25%] h-[25%] bg-orange-100/40 rounded-full blur-[80px] animate-blob" style={{ animationDelay: '4s' }} />
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-pink-200/20 rounded-full blur-[120px] animate-blob" />
+      <div className="absolute bottom-[10%] right-[-5%] w-[35%] h-[35%] bg-purple-200/10 rounded-full blur-[100px] animate-blob" style={{ animationDelay: '2s' }} />
+      <div className="absolute top-[20%] right-[10%] w-[25%] h-[25%] bg-yellow-100/30 rounded-full blur-[80px] animate-blob" style={{ animationDelay: '4s' }} />
 
       <Toaster toasts={toasts} removeToast={(id) => setToasts(t => t.filter(x => x.id !== id))} />
+
+      {/* MINIMAL DEVELOPER PANEL */}
+      <DebugPanel 
+        isVisible={isDeveloperMode}
+        fps={debugMetrics.fps}
+        processingTime={debugMetrics.processingTime}
+        filter={options.filter || 'none'}
+        resolution={isHDEnabled ? '1080x1920' : '720x1280'}
+        isRecording={canvasRef.current?.isRecording || false}
+      />
 
       <Routes>
         <Route path="/explore" element={<ExploreGallery />} />
         <Route path="/my" element={<Dashboard />} />
         <Route path="/" element={
-          <div className="relative w-full h-full flex flex-col">
+          <div className="relative w-full h-full flex flex-col items-center">
             {appState === 'landing' ? (
               <LandingScreen onStart={() => setAppState('live')} isLoading={false} error={null} />
             ) : (
-              <div className="w-full h-full relative">
-                {/* Product Header */}
-                <header className="absolute top-0 left-0 w-full p-8 z-50 flex justify-between items-center pointer-events-none">
+              <div className="w-full h-full relative flex flex-col">
+                {/* Minimal Header */}
+                <header className="absolute top-0 left-0 w-full p-6 md:p-10 z-[150] flex justify-between items-center pointer-events-none">
                   <div 
-                    className="flex items-center gap-3 pointer-events-auto cursor-help select-none"
-                    onMouseDown={startAdminTimer}
-                    onMouseUp={clearAdminTimer}
-                    onMouseLeave={clearAdminTimer}
-                    onTouchStart={startAdminTimer}
-                    onTouchEnd={clearAdminTimer}
+                    className="pointer-events-auto cursor-pointer select-none group"
+                    onMouseDown={startLongPress}
+                    onMouseUp={endLongPress}
+                    onMouseLeave={endLongPress}
+                    onTouchStart={startLongPress}
+                    onTouchEnd={endLongPress}
                   >
-                    <Heart className="w-5 h-5 text-rose-300 fill-rose-100" />
-                    <span className="text-2xl font-black tracking-tighter text-slate-900 lowercase">facetocode.</span>
+                    <span className="text-xl font-bold tracking-tight text-gray-800 lowercase opacity-80 group-hover:opacity-100 transition-opacity">
+                        facetocode.
+                    </span>
                   </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex items-center gap-3 pointer-events-auto">
-                    <button 
-                      onClick={handleSurpriseMe}
-                      className="h-14 px-8 flex items-center justify-center bg-gradient-to-r from-rose-300 to-rose-400 text-white font-black rounded-full shadow-[0_15px_40px_rgba(244,63,94,0.15)] hover:scale-105 active:scale-95 transition-all text-xs tracking-[0.2em] uppercase"
-                      title="Surprise Me"
-                    >
-                       Surprise Me 🎀
-                    </button>
-
-                    <button 
-                      onClick={() => setIsNavOpen(true)}
-                      className="w-14 h-14 flex items-center justify-center bg-white/40 backdrop-blur-2xl border border-white/50 rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.05)] text-slate-900 hover:bg-white/60 transition-all hover:scale-105 active:scale-95"
-                      title="Open Navigation"
-                    >
-                       <Grid className="w-6 h-6 text-pink-500" />
-                    </button>
-                  </div>
+                  <button 
+                    onClick={() => setIsNavOpen(true)}
+                    className="pointer-events-auto w-12 h-12 flex items-center justify-center bg-white/40 backdrop-blur-xl border border-white/60 rounded-full shadow-sm text-gray-600 hover:bg-white/80 transition-all hover:scale-105 active:scale-95"
+                  >
+                     <Grid className="w-5 h-5" />
+                  </button>
                 </header>
 
                 <NavSheet isOpen={isNavOpen} onClose={() => setIsNavOpen(false)} />
-                <CreativeSheet 
-                  isOpen={isCreativeSheetOpen} 
-                  onClose={() => setIsCreativeSheetOpen(false)} 
-                  options={options}
-                  setOptions={setOptions}
-                />
 
-                <main className="w-full h-full relative bg-pink-50/20">
+                <main className="w-full h-full relative flex flex-col items-center justify-center">
                   <AsciiCanvas 
                     ref={canvasRef}
                     options={options}
@@ -236,23 +232,30 @@ const App: React.FC = () => {
                   />
 
                   {appState === 'live' && (
-                    <CreativeToolbar 
-                      options={options} 
-                      setOptions={setOptions} 
-                      onOpenCreativeSheet={() => setIsCreativeSheetOpen(true)} 
+                    <ControlBar 
+                      onCapture={handleStartCapture}
+                      onSelectPreset={(idx) => {
+                        setCurrentPresetIndex(idx);
+                        setOptions(prev => ({ ...prev, ...VISUAL_PRESETS[idx].options }));
+                      }}
+                      onCycleStyle={handleStyleCycle}
+                      onToggleRecording={() => canvasRef.current?.toggleRecording()}
+                      isRecording={canvasRef.current?.isRecording || false}
+                      onOpenSettings={() => setIsSettingsOpen(true)}
+                      currentPresetIndex={currentPresetIndex}
                     />
                   )}
 
                   {appState === 'review' && capturedSouvenir && (
-                    <div className="absolute inset-0 z-[100] bg-white/40 backdrop-blur-3xl flex items-center justify-center p-8">
+                    <div className="absolute inset-0 z-[200] bg-white/60 backdrop-blur-3xl flex items-center justify-center p-8">
                        <div className="max-w-xl w-full flex flex-col items-center gap-10 text-center animate-in zoom-in duration-700">
-                          <h2 className="text-5xl font-black tracking-tighter text-slate-900 leading-tight lowercase">magic fragment captured<span className="text-rose-300"> 💌</span></h2>
-                          <div className="p-4 bg-white shadow-2xl rounded-[2.5rem] border border-pink-100/50 rotate-[-1deg] hover:rotate-0 transition-transform duration-500">
-                             <img src={capturedSouvenir} className="w-full h-auto rounded-[2rem]" alt="Souvenir" />
+                          <h2 className="text-4xl font-bold tracking-tight text-gray-900 leading-tight lowercase">magic fragment captured ✨</h2>
+                          <div className="p-4 bg-white shadow-2xl rounded-[32px] border border-pink-100/50 rotate-[-1deg] hover:rotate-0 transition-transform duration-500 overflow-hidden">
+                             <img src={capturedSouvenir} className="w-full h-auto rounded-[24px]" alt="Souvenir" />
                           </div>
                           <div className="flex gap-4 w-full">
-                             <button onClick={() => setAppState('live')} className="flex-1 py-6 rounded-full bg-white/50 border border-white text-slate-500 font-bold uppercase tracking-[0.2em] text-[10px] hover:bg-white transition-all">Retake</button>
-                             <button onClick={() => setAppState('delivery')} className="flex-[1.5] py-6 px-12 rounded-full bg-slate-900 text-white font-bold uppercase tracking-[0.2em] text-[10px] hover:bg-rose-500 transition-all shadow-xl">Keep Magic ✨</button>
+                             <button onClick={() => setAppState('live')} className="flex-1 py-5 rounded-full bg-white/50 border border-white text-gray-500 font-medium lowercase transition-all hover:bg-white shadow-sm">Retake</button>
+                             <button onClick={() => setAppState('delivery')} className="flex-[1.5] py-5 px-12 rounded-full bg-pink-400 text-white font-bold lowercase transition-all hover:bg-pink-500 shadow-lg">Keep Magic ✨</button>
                           </div>
                        </div>
                     </div>
@@ -267,17 +270,6 @@ const App: React.FC = () => {
                     />
                   )}
                 </main>
-
-                {appState === 'live' && (
-                  <ControlBar 
-                    onCapture={handleStartCapture}
-                    onCycleStyle={handleStyleCycle}
-                    onToggleRecording={() => canvasRef.current?.toggleRecording()}
-                    isRecording={canvasRef.current?.isRecording || false}
-                    onOpenSettings={() => setIsSettingsOpen(true)}
-                    currentPresetName={VISUAL_PRESETS[currentPresetIndex].name}
-                  />
-                )}
 
                 <SettingsPanel 
                   isOpen={isSettingsOpen} 

@@ -1,4 +1,4 @@
-export type AestheticFilter = 'none' | 'vintage' | 'soft_pink' | 'cool_blue' | 'dreamy' | 'paris_glow' | 'seoul_dream' | 'noir';
+export type AestheticFilter = 'none' | 'soft_pink' | 'warm_brown' | 'film' | 'mono_soft' | 'sage';
 export type CaptureMode = 'photo' | 'gif';
 
 export interface Sticker {
@@ -74,43 +74,39 @@ export const DEFAULT_ADMIN_CONFIG: AdminConfig = {
 export interface VisualPreset {
   id: string;
   name: string;
+  icon: string;
   options: Partial<AsciiOptions>;
 }
 
 export const VISUAL_PRESETS: VisualPreset[] = [
   { 
-    id: 'seoul_dream', 
-    name: 'Seoul Dream ☁️', 
-    options: { lightMode: true, theme: 'dreamy', colorMode: 'color', density: 'ultra_soft', fontSize: 13, resolution: 0.12, contrast: 0.6, brightness: 1.3, filter: 'seoul_dream', backgroundColor: '#f3e8ff' } 
-  },
-  { 
-    id: 'blush_vibe', 
-    name: 'Blush Pink 🌸', 
-    options: { lightMode: true, theme: 'pink', colorMode: 'color', density: 'premium_soft', fontSize: 11, resolution: 0.18, contrast: 0.7, brightness: 1.25, filter: 'paris_glow', backgroundColor: '#ffe4ec' } 
-  },
-  { 
-    id: 'paris_glow', 
-    name: 'Paris Glow 🌸', 
-    options: { theme: 'pink', colorMode: 'color', density: 'premium_soft', fontSize: 10, resolution: 0.18, contrast: 0.75, brightness: 1.25, filter: 'paris_glow' } 
-  },
-  { 
     id: 'soft_pink', 
-    name: 'Soft Pink ✨', 
-    options: { theme: 'pink', colorMode: 'color', density: 'soft', fontSize: 10, resolution: 0.18, contrast: 0.9, brightness: 1.1 } 
+    name: 'soft pink', 
+    icon: '🌸',
+    options: { lightMode: true, theme: 'pink', colorMode: 'color', density: 'ultra_soft', fontSize: 13, resolution: 0.12, contrast: 0.8, brightness: 1.2, filter: 'soft_pink' } 
   },
   { 
-    id: 'noir_classic', 
-    name: 'Noir 🎞️', 
-    options: { theme: 'noir', colorMode: 'bw', density: 'soft', fontSize: 10, resolution: 0.20, contrast: 1.1, brightness: 1.0 } 
+    id: 'warm_brown', 
+    name: 'warm brown', 
+    icon: '☕',
+    options: { lightMode: true, theme: 'none', colorMode: 'bw', density: 'dusky', fontSize: 11, resolution: 0.18, contrast: 1.0, brightness: 1.1, filter: 'warm_brown' } 
   },
   { 
-    id: 'pastel_vibe', 
-    name: 'Pastel 🎨', 
-    options: { theme: 'pastel', colorMode: 'color', density: 'soft', fontSize: 9, resolution: 0.25, contrast: 0.85, brightness: 1.15 } 
+    id: 'film', 
+    name: 'film', 
+    icon: '🎞',
+    options: { lightMode: true, theme: 'none', colorMode: 'color', density: 'soft', fontSize: 10, resolution: 0.22, contrast: 1.1, brightness: 0.9, filter: 'film' } 
   },
   { 
-    id: 'sparkle_joy', 
-    name: 'Sparkle ✨', 
-    options: { theme: 'sparkle', colorMode: 'bw', density: 'sparkle', fontSize: 14, resolution: 0.15, contrast: 1.2, brightness: 1.05 } 
+    id: 'mono_soft', 
+    name: 'mono soft', 
+    icon: '🖤',
+    options: { lightMode: false, theme: 'noir', colorMode: 'bw', density: 'soft', fontSize: 12, resolution: 0.15, contrast: 0.9, brightness: 1.0, filter: 'mono_soft' } 
+  },
+  { 
+    id: 'sage', 
+    name: 'sage', 
+    icon: '🌿',
+    options: { lightMode: true, theme: 'none', colorMode: 'color', density: 'soft', fontSize: 11, resolution: 0.18, contrast: 0.85, brightness: 1.15, filter: 'sage' } 
   }
 ];

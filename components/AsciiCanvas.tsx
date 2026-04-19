@@ -460,135 +460,60 @@ export const AsciiCanvas = forwardRef<AsciiCanvasHandle, AsciiCanvasProps>(({
   };
 
   return (
-    <div className="relative w-full h-full bg-white flex items-center justify-center p-8">
+    <div className="relative w-full h-full flex flex-col items-center justify-center p-4 md:p-8">
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/90 text-slate-300 z-50 font-sans">
-          <p className="animate-pulse font-bold tracking-[0.3em] uppercase text-[10px]">{error}</p>
+        <div className="absolute inset-0 flex items-center justify-center bg-white/90 text-gray-400 z-50 font-sans backdrop-blur-sm">
+          <p className="animate-pulse font-medium lowercase">{error}</p>
         </div>
       )}
       
-      <div className="relative w-full h-full flex items-center justify-center overflow-hidden rounded-[3rem] bg-slate-50 border border-slate-100 shadow-inner">
+      {/* 1:1 AESTHETIC VIEWFINDER FRAME */}
+      <div className="relative aspect-square w-full max-w-[min(85vh,100%)] overflow-hidden rounded-[20px] bg-white/40 border-[8px] border-white shadow-[inset_0_0_80px_rgba(0,0,0,0.05),0_20px_60px_rgba(0,0,0,0.05)] group">
+        
+        {/* VIGNETTE & GRAIN OVERLAY */}
+        <div className="absolute inset-0 z-10 pointer-events-none">
+            <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_40%,rgba(0,0,0,0.08)_100%)]" />
+            <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/p6.png')]" />
+        </div>
+
         <canvas 
             ref={canvasRef} 
-            className="block max-w-full max-h-full object-contain transition-all duration-1000" 
+            className="w-full h-full object-cover transition-opacity duration-700" 
             style={{ 
                 filter: getThemeFilter(),
             }}
         />
 
-        {/* Sticker Layer */}
-        <div className="absolute inset-0 z-40 pointer-events-none">
-           {options.stickers?.map(sticker => (
-             <div 
-               key={sticker.id}
-               className="absolute pointer-events-auto cursor-move select-none group"
-               style={{ 
-                 left: `${sticker.x * 100}%`, 
-                 top: `${sticker.y * 100}%`,
-                 transform: `translate(-50%, -50%) scale(${sticker.size}) rotate(${sticker.rotation}deg)`
-               }}
-               onPointerDown={(e) => {
-                  const rect = e.currentTarget.parentElement?.getBoundingClientRect();
-                  if (!rect) return;
-                  const moveHandler = (moveEvent: PointerEvent) => {
-                    const x = (moveEvent.clientX - rect.left) / rect.width;
-                    const y = (moveEvent.clientY - rect.top) / rect.height;
-                    moveSticker(sticker.id, x, y);
-                  };
-                  window.addEventListener('pointermove', moveHandler);
-                  window.addEventListener('pointerup', () => window.removeEventListener('pointermove', moveHandler), { once: true });
-               }}
-             >
-                <span className="text-4xl drop-shadow-lg">{sticker.emoji}</span>
-                {/* Minimal Controls */}
-                <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 backdrop-blur-md rounded-full px-2 py-1 shadow-sm border border-slate-100">
-                    <button onClick={(e) => { e.stopPropagation(); updateStickerSize(sticker.id, 0.1); }} className="p-1 hover:text-pink-500 text-[10px] font-bold">+</button>
-                    <button onClick={(e) => { e.stopPropagation(); updateStickerSize(sticker.id, -0.1); }} className="p-1 hover:text-pink-500 text-[10px] font-bold">-</button>
-                    <div className="w-[1px] h-3 bg-slate-100 mx-1" />
-                    <button onClick={(e) => { e.stopPropagation(); removeSticker(sticker.id); }} className="p-1 hover:text-red-500 text-[10px] font-bold">×</button>
-                </div>
-             </div>
-           ))}
-        </div>
+        {/* SOFT EDGE BLUR (INNER) */}
+        <div className="absolute inset-0 z-20 pointer-events-none shadow-[inset_0_0_40px_rgba(255,255,255,0.4)] backdrop-blur-[0.5px]" />
 
-        {/* Doodle Layer */}
-        <svg 
-           className="absolute inset-0 z-30 pointer-events-auto cursor-crosshair"
-           onPointerDown={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              const x = (e.clientX - rect.left) / rect.width;
-              const y = (e.clientY - rect.top) / rect.height;
-              startNewDoodlePath();
-              addDoodlePoint(x, y);
-              
-              const moveHandler = (moveEvent: PointerEvent) => {
-                const mx = (moveEvent.clientX - rect.left) / rect.width;
-                const my = (moveEvent.clientY - rect.top) / rect.height;
-                addDoodlePoint(mx, my);
-              };
-              window.addEventListener('pointermove', moveHandler);
-              window.addEventListener('pointerup', () => window.removeEventListener('pointermove', moveHandler), { once: true });
-           }}
-        >
-           {options.doodlePaths?.map((path, i) => (
-             <path 
-               key={i}
-               d={path.map((p, j) => `${j === 0 ? 'M' : 'L'} ${p.x * 100}% ${p.y * 100}%`).join(' ')}
-               fill="none"
-               stroke="#ff71a2"
-               strokeWidth="4"
-               strokeLinecap="round"
-               strokeLinejoin="round"
-             />
-           ))}
-        </svg>
-        
-        {/* Subtle Overlays */}
-        <div className="absolute inset-x-0 bottom-12 flex justify-center pointer-events-none z-50 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500">
-           <div className="px-6 py-2 bg-white/20 backdrop-blur-md rounded-full border border-white/30 text-[10px] font-black uppercase tracking-[0.4em] text-white/60 lowercase">
-              you but make it code 💻✨
-           </div>
-        </div>
-        <div className="absolute inset-0 pointer-events-none border-[32px] border-white/5 opacity-40" />
+        {/* Countdown Overlay */}
+        {countdown !== null && (
+          <div className="absolute inset-0 z-[200] flex items-center justify-center pointer-events-none">
+             <span className="text-[12rem] font-bold text-white drop-shadow-[0_10px_40px_rgba(0,0,0,0.15)] animate-ping">
+                {countdown}
+             </span>
+          </div>
+        )}
+
+        {/* Processing Overlay */}
+        {isProcessingLayout && (
+          <div className="absolute inset-0 z-[300] bg-white/60 backdrop-blur-2xl flex flex-col items-center justify-center">
+              <div className="w-12 h-12 border-4 border-pink-100 border-t-pink-400 rounded-full animate-spin" />
+              <p className="mt-6 text-sm font-medium text-pink-400 lowercase animate-pulse">making magic...</p>
+          </div>
+        )}
+
+        {/* Recording Indicator (Minimal) */}
+        {isRecording && (
+          <div className="absolute top-6 left-6 flex items-center gap-2 text-rose-400 text-xs font-semibold z-40 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-white">
+            <div className="w-1.5 h-1.5 bg-rose-400 rounded-full animate-pulse" />
+            <span className="lowercase">recording</span>
+          </div>
+        )}
       </div>
 
-      {/* Countdown Overlay */}
-      {countdown !== null && (
-        <div className="absolute inset-0 z-[200] flex items-center justify-center pointer-events-none">
-           <span className="text-[12rem] font-black text-white drop-shadow-[0_10px_50px_rgba(0,0,0,0.2)] animate-ping">
-              {countdown}
-           </span>
-        </div>
-      )}
-
-      {/* Processing Overlay */}
-      {isProcessingLayout && (
-        <div className="absolute inset-0 z-[300] bg-white/40 backdrop-blur-3xl flex flex-col items-center justify-center">
-            <div className="relative">
-                <div className="w-16 h-16 border-4 border-rose-100 border-t-rose-400 rounded-full animate-spin" />
-                <Sparkles className="absolute -top-4 -right-4 w-6 h-6 text-rose-300 animate-pulse" />
-            </div>
-            <p className="mt-8 text-[11px] font-black uppercase tracking-[0.4em] text-rose-400 lowercase animate-pulse">making it cute… 💭</p>
-        </div>
-      )}
-      
-      {/* Aesthetic Recording Indicator */}
-      {isRecording && (
-        <div className="absolute top-12 left-1/2 -translate-x-1/2 flex items-center gap-3 text-red-400 font-sans text-[10px] z-40 bg-white/80 backdrop-blur-md shadow-lg px-6 py-2.5 rounded-full border border-white/50">
-          <div className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse" />
-          <span className="font-bold uppercase tracking-[0.2em]">Live Session Captured</span>
-        </div>
-      )}
-
       <CaptionOverlay caption={caption} isVisible={showCaption} />
-
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes fadeOut {
-          0% { opacity: 1; }
-          100% { opacity: 0; }
-        }
-        .animate-fadeOut { animation: fadeOut 0.5s ease-out forwards; }
-      `}} />
     </div>
   );
 });
