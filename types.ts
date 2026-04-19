@@ -49,7 +49,8 @@ export const DENSITY_MAPS = {
   blocks: " ░▒▓█",
   sparkle: " .·:+*", 
   premium_soft: " . · : * +",
-  ultra_soft: "  .  ·  "
+  ultra_soft: "  .  ·  ",
+  dusky: " .:-=+*"
 };
 
 export type PhotoboothState = 'landing' | 'live' | 'countdown' | 'review' | 'delivery';

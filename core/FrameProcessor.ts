@@ -86,38 +86,44 @@ export class FrameProcessor {
       const row: string[] = [];
       for (let x = 0; x < cols; x++) {
         const i = (y * cols + x) * 4;
-        let r = data[i];
-        let g = data[i + 1];
-        let b = data[i + 2];
-
-        // Face-Biased Luminance Weighting
-        let brightness = 0.5 * r + 0.4 * g + 0.1 * b;
         
-        // A. Adaptive Auto-Exposure
-        brightness *= adaptiveFactor;
+        // 1. WARM COLOR GRADING (PRE-LUMINOSITY)
+        const rRaw = data[i];
+        const gRaw = data[i + 1];
+        const bRaw = data[i + 2];
+        const r = Math.min(255, rRaw * 1.15);
+        const g = Math.min(255, gRaw * 1.05);
+        const b = Math.min(255, bRaw * 0.85);
 
-        // B. Face-Centered Magic Glow (Stronger falloff)
+        // 2. MODIFIED LUMINOSITY FORMULA (DUSKY BIAS)
+        let brightness = 0.35 * r + 0.55 * g + 0.1 * b;
+        
+        // A. Adaptive Exposure & Focus
+        brightness *= adaptiveFactor;
         const dx = (x / cols) - 0.5;
         const dy = (y / rows) - 0.5;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        const centerFocus = Math.exp(-dist * 1.5) * 0.4 + 1.0; 
+        const centerFocus = Math.exp(-dist * 1.5) * 0.3 + 1.0; 
         brightness *= centerFocus;
 
-        // C. Shadow Lifting & Range Clamping (Light Mode Optimized)
-        if (options.lightMode) {
-          // Compress contrast for airy, eye-comfortable look
-          brightness = brightness * 0.6 + 80;
-          brightness = Math.max(90, Math.min(240, brightness));
-        } else {
-          brightness = Math.max(30, Math.min(235, brightness)); 
+        // 3. CORE FIX: LIGHTEN ENTIRE IMAGE & COMPRESS CONTRAST
+        // Lifts dark areas and prevents black collapse
+        brightness = brightness * 0.6 + 90;
+        
+        // Avoid pure black or pure white technical extremes
+        brightness = Math.max(80, Math.min(220, brightness));
+
+        // 4. KEEP FACIAL FEATURES VISIBLE (EDGE BOOST)
+        // Simple horizontal edge detection for detail preservation
+        if (x > 0) {
+            const pi = (y * cols + (x - 1)) * 4;
+            const pBright = (0.35 * data[pi] + 0.55 * data[pi+1] + 0.1 * data[pi+2]) * 0.6 + 90;
+            if (Math.abs(brightness - pBright) > 12) {
+                brightness = Math.min(255, brightness * 1.1); // Boost contrast only for features
+            }
         }
 
-        // Application of options
-        brightness = contrastFactor * (brightness - 128) + 128;
-        brightness *= options.brightness;
-        brightness = Math.max(0, Math.min(255, brightness));
-
-        // Temporal Smoothing (higher inertia for silkier video)
+        // Temporal Smoothing
         const idx = y * cols + x;
         const prev = prevBrightnessBuffer[idx];
         const smoothed = prev + (brightness - prev) * (1 - inertia);
@@ -125,14 +131,18 @@ export class FrameProcessor {
         brightnessBuffer[idx] = smoothed;
         prevBrightnessBuffer[idx] = smoothed;
 
-        // Map to character
-        const charIndex = Math.floor((smoothed / 255) * mapLen);
-        row.push(densityMap[charIndex]);
+        // 5. ENSURE FULL PIXEL COVERAGE
+        // Map to character (DUSKY variant " .:-=+*")
+        // We use Math.floor which is safe.
+        const charPool = DENSITY_MAPS.dusky || DENSITY_MAPS.soft;
+        const charPoolLen = charPool.length - 1;
+        const charIndex = Math.floor((smoothed / 255) * charPoolLen);
+        row.push(charPool[charIndex]);
         
-        // Save colors with subtle skin-tone warming
-        colorBuffer[i] = Math.min(255, r * adaptiveFactor * 1.05); // Warmth
-        colorBuffer[i + 1] = Math.min(255, g * adaptiveFactor);
-        colorBuffer[i + 2] = Math.min(255, b * adaptiveFactor * 0.95); // Reduce blue
+        // Save colors for rendering (BROWN/DUSKY palette is applied in Renderer)
+        colorBuffer[i] = r;
+        colorBuffer[i + 1] = g;
+        colorBuffer[i + 2] = b;
         colorBuffer[i + 3] = 255;
       }
       chars.push(row);

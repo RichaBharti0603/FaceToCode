@@ -36,22 +36,18 @@ export class CanvasRenderer {
 
     // 2. Clear canvases and Draw Background
     if (options.lightMode) {
-      // Pastel Gradient Background
-      const bgGrad = ctx.createLinearGradient(0, 0, width, height);
-      bgGrad.addColorStop(0, options.backgroundColor || '#ffe4ec'); // Blush
-      bgGrad.addColorStop(0.5, '#ffffff');
-      bgGrad.addColorStop(1, '#f3e8ff'); // Lavender
-      ctx.fillStyle = bgGrad;
+      // 8. BACKGROUND COLOR (WARM CREAM)
+      ctx.fillStyle = '#f5e6da';
       ctx.fillRect(0, 0, width, height);
 
-      // Background Radial Glow (Subject Focus)
-      const glow = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width * 0.4);
-      glow.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
-      glow.addColorStop(1, 'rgba(255, 255, 255, 0)');
-      ctx.fillStyle = glow;
+      // 10. ADD SOFT CENTER LIGHTING
+      const lighting = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width * 0.7);
+      lighting.addColorStop(0, 'rgba(255, 255, 255, 0.4)'); // Center Bright
+      lighting.addColorStop(1, 'rgba(0, 0, 0, 0.05)');     // Edges slightly darker
+      ctx.fillStyle = lighting;
       ctx.fillRect(0, 0, width, height);
     } else {
-      ctx.fillStyle = '#111111';
+      ctx.fillStyle = '#2b1d16'; // Deep Dusk Brown
       ctx.fillRect(0, 0, width, height);
     }
     this.offscreenCtx.clearRect(0, 0, width, height);
@@ -68,30 +64,32 @@ export class CanvasRenderer {
     targetCtx.textAlign = 'center';
     targetCtx.textBaseline = 'middle';
     
-    if (options.lightMode) {
-        targetCtx.fillStyle = '#6c757d'; // Soft Grey
-        targetCtx.globalAlpha = 0.85; // Breathable
-    } else {
-        targetCtx.fillStyle = '#ffffff'; 
-    }
+    // 9. REDUCE CHARACTER HARSHNESS
+    targetCtx.globalAlpha = 0.75;
+    targetCtx.shadowBlur = 0; // Disable previous harsh glow
+
+    // 6. BROWN / DUSKY ASCII COLOR PALETTE
+    // 12. REMOVE PURE BLACK OUTPUT (darkest = #6f4e37)
+    const brownPalette = ['#6f4e37', '#8b5e3c', '#c08a5d', '#e6b98c'];
+
     // A. Advanced Glow & Bloom Pass
     const isDreamy = options.theme === 'dreamy' || options.theme === 'pink' || options.filter === 'paris_glow' || options.filter === 'seoul_dream';
     
     if (isDreamy) {
-        // Bloom Pass: Large soft glow
-        const bloom = Math.sin(time * 0.003) * 3 + 12;
-        targetCtx.shadowBlur = options.fontSize * (0.5 + (bloom / 15));
-        targetCtx.shadowColor = options.filter === 'paris_glow' ? 'rgba(255, 180, 200, 0.6)' : 'rgba(200, 220, 255, 0.5)';
+        // Softened Bloom for dusky look
+        targetCtx.shadowBlur = options.fontSize * 0.4;
+        targetCtx.shadowColor = 'rgba(111, 78, 55, 0.3)'; // Coffee Glow
         
-        // Bloom layering
-        targetCtx.globalAlpha = 0.4;
-        for (let x = 0; x < gridWidth; x += 2) { 
-           for (let y = 0; y < gridHeight; y += 2) {
+        targetCtx.globalAlpha = 0.3;
+        for (let x = 0; x < gridWidth; x += 3) { 
+           for (let y = 0; y < gridHeight; y += 3) {
+              const bVal = frame.brightness[y * gridWidth + x];
+              const cIdx = Math.min(3, Math.floor((bVal / 255) * brownPalette.length));
+              targetCtx.fillStyle = brownPalette[cIdx];
               targetCtx.fillText(chars[y][x], (x + 0.5) * cellWidth, (y + 0.5) * cellHeight);
            }
         }
-        targetCtx.globalAlpha = 1.0;
-        targetCtx.shadowBlur = 0; // Reset for primary text
+        targetCtx.globalAlpha = 0.75;
     }
 
     // B. Primary Character Grid Rendering
@@ -99,15 +97,23 @@ export class CanvasRenderer {
       const xPosBase = (x + 0.5) * cellWidth;
       for (let y = 0; y < gridHeight; y++) {
         const yPosBase = (y + 0.5) * cellHeight;
+        const idx = y * gridWidth + x;
+        const bVal = frame.brightness[idx];
         
-        // Interactive Shimmer
+        // Color mapping to dusky brown palette
+        if (!isColorMode) {
+            const cIdx = Math.min(3, Math.floor((bVal / 255) * brownPalette.length));
+            targetCtx.fillStyle = brownPalette[cIdx];
+        } else {
+            targetCtx.fillStyle = '#ffffff'; 
+        }
+
+        // Interactive Shimmer (Subtle)
         let xPos = xPosBase;
         let yPos = yPosBase;
         if (time > 0) {
-            const shimmerX = Math.sin(time * 0.002 + x * 0.1 + y * 0.05) * (cellWidth * 0.05);
-            const shimmerY = Math.cos(time * 0.002 + x * 0.05 + y * 0.1) * (cellHeight * 0.05);
-            xPos += shimmerX;
-            yPos += shimmerY;
+            const sh = Math.sin(time * 0.001 + x * 0.1) * (cellWidth * 0.02);
+            xPos += sh;
         }
 
         targetCtx.fillText(chars[y][x], xPos, yPos);
@@ -121,10 +127,8 @@ export class CanvasRenderer {
       ctx.translate(width, 0);
       ctx.scale(-1, 1);
       
-      // Apply color grading to the video feed itself
-      if (options.filter === 'paris_glow') ctx.filter = 'saturate(0.8) brightness(1.2) hue-rotate(-10deg)';
-      if (options.filter === 'seoul_dream') ctx.filter = 'saturate(0.9) brightness(1.15) contrast(0.9) hue-rotate(10deg)';
-      
+      // Filter for brown-toned video feed
+      ctx.filter = 'sepia(0.8) contrast(0.9) brightness(1.1) hue-rotate(-10deg)';
       ctx.drawImage(video, 0, 0, width, height);
       ctx.restore();
 
@@ -132,26 +136,19 @@ export class CanvasRenderer {
       ctx.drawImage(this.offscreenCanvas, 0, 0);
       ctx.globalCompositeOperation = 'source-over';
       
-      // Final Aesthetic Softening Layer
+      // Final Aesthetic Wash
       ctx.save();
       ctx.globalCompositeOperation = 'soft-light';
-      if (options.filter === 'paris_glow') {
-          ctx.fillStyle = 'hsla(340, 100%, 85%, 0.15)';
-          ctx.fillRect(0, 0, width, height);
-      } else if (options.filter === 'seoul_dream') {
-          ctx.fillStyle = 'hsla(260, 100%, 85%, 0.15)';
-          ctx.fillRect(0, 0, width, height);
-      }
+      ctx.fillStyle = 'rgba(111, 78, 55, 0.1)'; // Coffee Wash
+      ctx.fillRect(0, 0, width, height);
       ctx.restore();
     }
 
-    // 5. Final Soft Blur (Stylized Portrait Finish)
-    if (isDreamy) {
-        ctx.filter = 'blur(0.4px)';
-        const temp = ctx.getImageData(0, 0, width, height);
-        ctx.putImageData(temp, 0, 0);
-        ctx.filter = 'none';
-    }
+    // 5. Final Soft Blur (9. REDUCE CHARACTER HARSHNESS - Subtle blur)
+    ctx.filter = 'blur(0.4px)';
+    const temp = ctx.getImageData(0, 0, width, height);
+    ctx.putImageData(temp, 0, 0);
+    ctx.filter = 'none';
 
     // 6. Meme Overlay (Viral Boost)
     if (options.memeTextTop || options.memeTextBottom) {
