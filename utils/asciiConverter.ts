@@ -1,8 +1,10 @@
 import { DENSITY_MAPS, AsciiOptions } from '../types';
 
-export const getAsciiChar = (brightness: number, densityType: keyof typeof DENSITY_MAPS): string => {
-  const map = DENSITY_MAPS[densityType];
-  const index = Math.floor((brightness / 255) * (map.length - 1));
+export const getAsciiChar = (brightness: number, characterSet: keyof typeof DENSITY_MAPS | 'custom', customChars?: string, invert?: boolean): string => {
+  let map = characterSet === 'custom' && customChars ? customChars : DENSITY_MAPS[characterSet] || DENSITY_MAPS.standard;
+  let normalized = brightness / 255;
+  if (invert) normalized = 1 - normalized;
+  const index = Math.floor(normalized * (map.length - 1));
   return map[index];
 };
 
@@ -12,7 +14,7 @@ export const processFrame = (
   height: number,
   options: AsciiOptions
 ): string[] => {
-  const { contrast, brightness, density } = options;
+  const { contrast, brightness, characterSet, customChars, invert } = options;
   const frameData = ctx.getImageData(0, 0, width, height);
   const data = frameData.data;
   const rows: string[] = [];
@@ -27,7 +29,6 @@ export const processFrame = (
       const r = data[offset];
       const g = data[offset + 1];
       const b = data[offset + 2];
-      // const a = data[offset + 3];
 
       // Standard luminosity conversion
       let originalBrightness = 0.2126 * r + 0.7152 * g + 0.0722 * b;
@@ -41,7 +42,7 @@ export const processFrame = (
       // Clamp
       cBrightness = Math.max(0, Math.min(255, cBrightness));
 
-      row += getAsciiChar(cBrightness, density);
+      row += getAsciiChar(cBrightness, characterSet, customChars, invert);
     }
     rows.push(row);
   }
@@ -49,12 +50,12 @@ export const processFrame = (
 };
 
 // Helper to determine text color based on mode
-export const getFillStyle = (ctx: CanvasRenderingContext2D, width: number, height: number, mode: AsciiOptions['colorMode']) => {
-  if (mode === 'bw') {
-    return '#ffffff';
-  } else if (mode === 'color') {
-    // In 'color' mode, we typically render with a soft pink accent if not doing per-char color
-    return '#f472b6'; // tailwind pink-400
+export const getFillStyle = (ctx: CanvasRenderingContext2D, width: number, height: number, mode: AsciiOptions['colorMode'], brightness?: number) => {
+  const b = brightness ?? 150;
+  if (b > 200) {
+    return '#E3F2FD'; // Soft White-Blue
+  } else if (b > 100) {
+    return '#C7A75D'; // Royal Gold
   }
-  return '#ffffff';
+  return '#1E3A8A'; // Royal Blue
 };

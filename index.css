@@ -1,111 +1,185 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;700&family=DM+Sans:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Mono:wght@400;500;700&family=Inter:wght@400;500;700&family=Playfair+Display:wght@400;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --vintage-sandstone: #f5e9dc;
-  --vintage-brown: #6f4e37;
-  --vintage-brown-muted: #8b5e3c;
-  --vintage-terracotta: #c08a5d;
-  --vintage-cream: #e6b98c;
-  --vintage-peach: #f5d5c5;
-  --vintage-pink: #f4dada;
+  /* Royal Jaipur Blue Theme */
+  --primary: #1E3A8A;        /* Royal Blue */
+  --primary-dark: #0F2A44;   /* Deep Royal */
+  --primary-glow: rgba(227, 242, 253, 0.3);
+  --secondary: #E3F2FD;      /* Soft White-Blue */
+  --accent: #C7A75D;         /* Royal Gold */
+  
+  --bg-main: #0B1A2F;        /* Dark navy base */
+  --bg-surface: rgba(255, 255, 255, 0.05);
+  --bg-elevated: rgba(255, 255, 255, 0.08);
+  --border: rgba(255, 255, 255, 0.1);
+  
+  --text-primary: #F5F9FF;   /* Readability */
+  --text-secondary: #5A6B85;
+  --text-muted: #3B4B65;
+  
+  --error: #FF4444;
+  --success: #00C853;
+  --warning: #FFB300;
+  
+  /* Typography */
+  --font-mono: 'Fira Mono', 'Courier New', monospace;
+  --font-sans: 'Inter', -apple-system, sans-serif;
+  --font-ui: 'Playfair Display', serif;
+  
+  --font-size-xs: 11px;
+  --font-size-sm: 13px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 24px;
+  --font-size-2xl: 32px;
+  --font-size-3xl: 48px;
+  
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+  
+  /* Effects */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 8px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 16px rgba(0,0,0,0.5);
+  --shadow-xl: 0 16px 32px rgba(0,0,0,0.6);
+  --glow-sm: 0 0 5px var(--primary-glow);
+  --glow-md: 0 0 10px var(--primary-glow);
+  --glow-lg: 0 0 20px var(--primary-glow);
+  
+  /* Animation */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+  --transition-slow: 400ms ease;
+  
+  /* Layout */
+  --header-height: 64px;
+  --sidebar-width: 240px;
+  --max-width: 1440px;
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --border-radius-xl: 16px;
+  --border-radius-2xl: 24px;
 }
 
 @layer base {
   body {
-    font-family: 'DM Sans', 'Inter', sans-serif;
-    @apply text-[#6f4e37] bg-[#f5e9dc] selection:bg-[#c08a5d]/30 overflow-x-hidden;
+    font-family: var(--font-sans);
+    @apply text-text-primary bg-bg-main selection:bg-primary/30;
   }
+  
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    /* Use one of the existing large textures */
+    background: url('/assests/images/9cf9f26590ace65591cd115e1a2c25be.jpg') center/cover no-repeat;
+    opacity: 0.12;
+    z-index: -1;
+    pointer-events: none;
+    mix-blend-mode: soft-light;
+  }
+
   h1, h2, h3, h4 {
-    font-family: 'Playfair Display', serif;
-    @apply tracking-tight font-bold text-[#6f4e37];
+    font-family: var(--font-ui);
+    @apply tracking-tight font-bold text-text-primary;
   }
 }
 
 @layer components {
-  /* Ethereal Background System */
-  .vintage-bg {
-    @apply relative w-full h-full bg-[#f5e9dc];
-    background-image: 
-      radial-gradient(circle at 50% 50%, rgba(245, 213, 197, 0.4) 0%, transparent 70%),
-      radial-gradient(circle at 100% 0%, rgba(244, 218, 218, 0.3) 0%, transparent 50%),
-      radial-gradient(circle at 0% 100%, rgba(230, 185, 140, 0.2) 0%, transparent 50%);
+  /* Component Refinements for Royal Theme */
+  
+  /* Update scanline effects for Royal style */
+  .scanlines {
+    @apply pointer-events-none absolute inset-0 z-50;
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0),
+      rgba(255, 255, 255, 0) 50%,
+      rgba(0, 0, 0, 0.15) 50%,
+      rgba(0, 0, 0, 0.15)
+    );
+    background-size: 100% 4px;
   }
 
-  .pattern-overlay {
-    @apply absolute inset-0 opacity-[0.1] pointer-events-none;
-    background-image: url('/assests/images/48e4ed78eaabbc2c197b82672ec44d7a.webp'); /* Assuming this is the pattern */
-    background-repeat: repeat;
-    mix-blend-mode: multiply;
-  }
-
-  /* Soft Matte Buttons */
-  .btn-matte {
-    @apply px-8 py-4 rounded-full font-bold transition-all duration-300 active:scale-95 shadow-sm;
+  .scanlines-green {
+    @apply pointer-events-none absolute inset-0 z-50;
+    background: linear-gradient(
+      to bottom,
+      rgba(227, 242, 253, 0.03) 0px,
+      transparent 2px
+    );
+    background-size: 100% 4px;
   }
   
-  .btn-matte-terracotta {
-    @apply btn-matte bg-[#c08a5d] text-white hover:bg-[#8b5e3c] shadow-[#c08a5d]/20;
+  /* Buttons */
+  .btn-primary {
+    @apply px-6 py-3 rounded text-text-primary font-ui font-bold tracking-wider transition-all duration-200;
+    background: linear-gradient(135deg, #1E4A73, #0F2A44);
+    border: 1px solid var(--border);
+    box-shadow: 0 0 12px rgba(227, 242, 253, 0.15);
+  }
+  .btn-primary:hover {
+    transform: scale(1.03);
+    box-shadow: 0 0 20px rgba(227, 242, 253, 0.25);
+  }
+  .btn-primary:active {
+    transform: scale(0.98);
   }
   
-  .btn-matte-beige {
-    @apply btn-matte bg-[#e6b98c] text-[#6f4e37] hover:bg-[#c08a5d] hover:text-white;
+  .btn-secondary {
+    @apply px-6 py-3 rounded border border-border text-text-secondary font-ui tracking-wider transition-all duration-200 hover:border-primary hover:text-text-primary active:scale-95;
+    background: rgba(255, 255, 255, 0.02);
   }
 
-  .btn-matte-pink {
-    @apply btn-matte bg-[#f4dada] text-[#6f4e37] hover:bg-[#f5d5c5];
+  .btn-icon {
+    @apply w-10 h-10 flex items-center justify-center rounded transition-all duration-200 text-text-secondary hover:text-text-primary active:scale-95;
   }
 
-  /* Jharokha Frame System */
-  .jharokha-frame {
-    @apply relative bg-white rounded-t-[120px] rounded-b-[24px] border-[12px] border-white shadow-2xl overflow-hidden;
-    box-shadow: 
-      0 20px 50px rgba(111, 78, 55, 0.15),
-      inset 0 0 20px rgba(111, 78, 55, 0.05);
-  }
-
-  .jharokha-border {
-    @apply absolute inset-0 pointer-events-none border-[1px] border-[#6f4e37]/10 rounded-t-[110px] rounded-b-[18px];
-  }
-
-  .carving-texture {
-    @apply absolute inset-0 opacity-[0.12] pointer-events-none mix-blend-overlay;
-    background-image: url('/assests/images/5e21cdc79b7a0fb1e0e2c176be5d5168.jpg'); /* Assuming carving texture */
+  /* Royal Glass Cards */
+  .royal-glass, .bg-bg-surface, .bg-bg-elevated {
+    background: linear-gradient(rgba(11,26,47,0.85), rgba(11,26,47,0.95)), url('/assests/images/download.png');
     background-size: cover;
-  }
-
-  /* Viewfinder Overlays */
-  .grain-overlay {
-    @apply fixed inset-0 pointer-events-none z-[9999] opacity-[0.04];
-    background-image: url('https://www.transparenttextures.com/patterns/pinstriped-suit.png');
-    mix-blend-mode: multiply;
-  }
-
-  .light-leak {
-    @apply absolute inset-0 pointer-events-none opacity-[0.05] bg-gradient-to-tr from-orange-300/20 via-transparent to-rose-200/20;
+    background-blend-mode: overlay;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
   }
 
   /* Custom Scrollbar */
   ::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
+    height: 8px;
   }
   ::-webkit-scrollbar-track {
-    @apply bg-[#f5e9dc];
+    @apply bg-bg-main;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-[#c08a5d]/40 rounded-full hover:bg-[#c08a5d];
+    @apply bg-border rounded hover:bg-primary transition-colors;
   }
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+@keyframes glitch {
+  0% { transform: translate(0) }
+  20% { transform: translate(-2px, 2px) }
+  40% { transform: translate(-2px, -2px) }
+  60% { transform: translate(2px, 2px) }
+  80% { transform: translate(2px, -2px) }
+  100% { transform: translate(0) }
 }
 
-.animate-float {
-  animation: float 6s ease-in-out infinite;
+.animate-glitch {
+  animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
 }
 

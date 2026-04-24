@@ -1,137 +1,170 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Compass, ArrowLeft, Heart, Sparkles, User, Search, Grid } from 'lucide-react';
+import { Search, Grid, List, Filter, Download, Trash2, Heart, Clock, Code2 } from 'lucide-react';
+import { Toast } from './Toaster';
 
-interface Snapshot {
-  id: string;
-  preview_url: string;
-  created_at: string;
+interface ExploreGalleryProps {
+  addToast: (message: string, type?: Toast['type']) => void;
 }
 
-export const ExploreGallery: React.FC = () => {
-  const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
-  const [loading, setLoading] = useState(true);
+export const ExploreGallery: React.FC<ExploreGalleryProps> = ({ addToast }) => {
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isBatchMode, setIsBatchMode] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<number[]>([]);
 
-  useEffect(() => {
-    const fetchExplore = async () => {
-      try {
-        const response = await fetch('/api/snapshot?explore=true');
-        if (!response.ok) throw new Error("Connection failed");
-        const data = await response.json();
-        setSnapshots(data);
-      } catch (err) {
-        console.error("Explore fetch error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Mock data
+  const mockItems = Array.from({ length: 12 }).map((_, i) => ({
+    id: i,
+    timestamp: new Date(Date.now() - Math.random() * 1000000000).toISOString(),
+    resolution: '120x80',
+    charset: ['Standard', 'Blocks', 'Binary'][Math.floor(Math.random() * 3)],
+  }));
 
-    fetchExplore();
-  }, []);
+  const handleSelect = (id: number) => {
+    if (selectedItems.includes(id)) {
+      setSelectedItems(selectedItems.filter(i => i !== id));
+    } else {
+      setSelectedItems([...selectedItems, id]);
+    }
+  };
+
+  const handleBatchAction = (action: string) => {
+    if (selectedItems.length === 0) return;
+    addToast(`${action} ${selectedItems.length} items.`, 'success');
+    if (action === 'Deleted') {
+      setSelectedItems([]);
+      setIsBatchMode(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 text-slate-900 font-sans p-6 md:p-12 overflow-x-hidden">
-      {/* Back Navigation */}
-      <div className="max-w-7xl mx-auto mb-12 px-4">
-        <Link 
-          to="/" 
-          className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 hover:text-pink-500 transition-colors group"
-        >
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          Camera
-        </Link>
+    <div className="flex flex-col h-[calc(100vh-64px)] w-full bg-bg-main text-text-primary overflow-hidden">
+      
+      {/* Header & Filters */}
+      <div className="h-[80px] border-b border-border bg-bg-surface px-6 md:px-12 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-6 flex-1 max-w-2xl">
+           <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary w-4 h-4" />
+              <input 
+                 type="text" 
+                 placeholder="Search by ID, charset, or date..." 
+                 value={searchQuery}
+                 onChange={e => setSearchQuery(e.target.value)}
+                 className="w-full bg-[#111] border border-[#222] text-sm text-text-primary rounded-full py-2 pl-10 pr-4 outline-none focus:border-primary transition-colors font-mono"
+              />
+           </div>
+           
+           <div className="hidden md:flex items-center gap-2">
+              <select className="bg-bg-main border border-border text-sm font-mono p-2 rounded-lg outline-none">
+                 <option>Sort: Newest</option>
+                 <option>Sort: Oldest</option>
+              </select>
+           </div>
+        </div>
+
+        <div className="flex items-center gap-4 ml-4">
+           <div className="flex bg-bg-main rounded-lg border border-border p-1">
+              <button 
+                 onClick={() => setViewMode('grid')} 
+                 className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-primary/20 text-primary' : 'text-text-secondary hover:text-text-primary'}`}
+              >
+                 <Grid className="w-4 h-4" />
+              </button>
+              <button 
+                 onClick={() => setViewMode('list')} 
+                 className={`p-1.5 rounded ${viewMode === 'list' ? 'bg-primary/20 text-primary' : 'text-text-secondary hover:text-text-primary'}`}
+              >
+                 <List className="w-4 h-4" />
+              </button>
+           </div>
+           <button 
+              onClick={() => { setIsBatchMode(!isBatchMode); setSelectedItems([]); }}
+              className={`text-xs font-mono font-bold px-3 py-1.5 rounded border transition-colors ${isBatchMode ? 'bg-primary text-bg-main border-primary' : 'border-border text-text-secondary hover:text-text-primary hover:border-text-secondary'}`}
+           >
+              {isBatchMode ? 'CANCEL BATCH' : 'BATCH OPS'}
+           </button>
+        </div>
       </div>
 
-      {/* Aesthetic Header */}
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-16 px-4">
-        <div className="flex items-center gap-6">
-          <div className="relative group">
-            <div className="absolute inset-0 bg-pink-400 blur-2xl opacity-20 group-hover:opacity-40 transition-opacity" />
-            <div className="relative w-16 h-16 bg-white rounded-3xl flex items-center justify-center shadow-xl border border-pink-100/50">
-               <Compass className="w-8 h-8 text-pink-500 animate-[spin_20s_linear_infinite]" />
-            </div>
-          </div>
-          <div>
-            <h1 className="text-4xl font-black tracking-tighter text-slate-900 mb-1">Explore Discoveries<span className="text-pink-400">.</span></h1>
-            <div className="flex items-center gap-4 text-[10px] text-slate-400 uppercase font-black tracking-widest">
-               <span className="flex items-center gap-1"><Grid className="w-3 h-3 text-pink-300" /> Global Stream</span>
-               <span className="opacity-30">|</span>
-               <span>{snapshots.length} Magic Fragments Detected</span>
-            </div>
-          </div>
-        </div>
-        
-        <Link 
-          to="/" 
-          className="group flex items-center gap-3 text-[10px] uppercase font-black tracking-widest bg-white text-slate-900 border border-pink-100 px-10 py-5 transition-all rounded-full shadow-lg hover:shadow-pink-400/10 hover:border-pink-300"
-        >
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform text-pink-400" /> Start Capture
-        </Link>
+      {/* Stats Bar */}
+      <div className="h-[40px] border-b border-border bg-[#0a0a0a] px-6 md:px-12 flex items-center gap-8 text-[11px] font-mono text-text-secondary shrink-0">
+         <div className="flex items-center gap-2" title="Total Captures">
+            <Code2 className="w-3 h-3 text-primary" /> {mockItems.length} ITEMS
+         </div>
+         <div className="flex items-center gap-2" title="Storage Used">
+            <span>💾</span> 2.4 MB USED
+         </div>
       </div>
 
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-40">
-           <div className="w-12 h-12 border-4 border-pink-100 border-t-pink-500 rounded-full animate-spin mb-6" />
-           <p className="text-[10px] uppercase tracking-[0.4em] font-black text-pink-300 animate-pulse">Syncing Aesthetic Grid...</p>
-        </div>
-      ) : snapshots.length === 0 ? (
-        <div className="max-w-2xl mx-auto text-center py-32 bg-white/40 backdrop-blur-xl border border-pink-100 rounded-[3rem] shadow-xl">
-           <Heart className="w-12 h-12 mx-auto mb-6 text-pink-200" />
-           <h2 className="text-2xl font-black tracking-tighter text-slate-900 mb-2">No Fragments Yet</h2>
-           <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest px-8">The discovery feed is currently silent. Be the first to share your magic.</p>
-           <Link to="/" className="mt-10 inline-block px-10 py-5 bg-pink-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-pink-500/20 hover:scale-105 transition-all">Begin Sequence</Link>
-        </div>
-      ) : (
-        <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10 px-4">
-          {snapshots.map((snap) => (
-            <Link 
-              key={snap.id} 
-              to={`/s/${snap.id}`}
-              className="group relative bg-white border border-pink-50 rounded-[2.5rem] overflow-hidden hover:border-pink-200 transition-all shadow-[0_10px_40px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_60px_rgba(244,114,182,0.1)] p-3"
-            >
-              <div className="aspect-[4/5] w-full bg-slate-50 relative rounded-[2rem] overflow-hidden">
-                 {snap.preview_url ? (
-                   <img 
-                    src={snap.preview_url} 
-                    alt="Neural Fragment" 
-                    className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110"
-                   />
-                 ) : (
-                   <div className="w-full h-full flex items-center justify-center opacity-10">
-                      <Sparkles className="w-12 h-12 text-pink-400" />
+      {/* Main Content: Gallery Grid/List */}
+      <div className="flex-1 overflow-y-auto p-6 md:p-12 relative">
+         {/* Batch Operations Bar */}
+         {isBatchMode && (
+           <div className="sticky top-0 z-40 bg-bg-elevated border border-border rounded-xl p-4 mb-6 flex items-center justify-between shadow-lg animate-slide-up">
+              <div className="text-sm font-mono text-primary font-bold">
+                 {selectedItems.length} ITEMS SELECTED
+              </div>
+              <div className="flex gap-2">
+                 <button onClick={() => handleBatchAction('Downloaded')} className="btn-secondary py-2 text-xs flex items-center gap-2">
+                    <Download className="w-4 h-4" /> EXPORT ZIP
+                 </button>
+                 <button onClick={() => handleBatchAction('Deleted')} className="btn-secondary py-2 text-xs flex items-center gap-2 !border-error !text-error hover:!bg-error/10">
+                    <Trash2 className="w-4 h-4" /> DELETE
+                 </button>
+              </div>
+           </div>
+         )}
+
+         <div className={viewMode === 'grid' 
+            ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"
+            : "flex flex-col gap-4 max-w-4xl mx-auto"
+         }>
+            {mockItems.map((item) => (
+              <div 
+                 key={item.id} 
+                 className={`group relative bg-[#0a0a0a] border rounded-xl overflow-hidden transition-all duration-300 hover:shadow-card-hover hover:-translate-y-1 ${selectedItems.includes(item.id) ? 'border-primary ring-1 ring-primary' : 'border-[#1a1a1a] hover:border-primary/50'}`}
+                 onClick={() => isBatchMode && handleSelect(item.id)}
+              >
+                 {isBatchMode && (
+                   <div className="absolute top-3 left-3 z-30">
+                      <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${selectedItems.includes(item.id) ? 'bg-primary border-primary' : 'border-text-secondary bg-bg-main/50'}`}>
+                         {selectedItems.includes(item.id) && <div className="w-2 h-2 bg-bg-main" />}
+                      </div>
                    </div>
                  )}
-                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
+                 
+                 <div className={`${viewMode === 'grid' ? 'aspect-[4/5]' : 'h-32'} w-full relative bg-[#111] overflow-hidden`}>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                       {/* Mock ASCII Content */}
+                       <pre className="text-[4px] leading-[4px] text-primary/50 font-mono scale-[2] group-hover:scale-[2.2] transition-transform duration-700">
+                          {Array.from({length: 40}).map(() => "@@@@%#*+=-:. \n").join('')}
+                       </pre>
+                    </div>
+                    
+                    {/* Hover overlay */}
+                    {!isBatchMode && (
+                       <div className="absolute inset-0 bg-bg-main/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-sm z-20">
+                          <button className="btn-icon bg-bg-surface border border-border hover:border-primary"><Download className="w-4 h-4" /></button>
+                          <button className="btn-icon bg-bg-surface border border-border hover:border-error hover:text-error"><Trash2 className="w-4 h-4" /></button>
+                       </div>
+                    )}
+                 </div>
 
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter truncate max-w-[100px]">
-                    ID: {snap.id}
-                  </div>
-                  <div className="flex items-center gap-1 text-[8px] text-pink-300 font-black uppercase tracking-widest">
-                     <User className="w-2 h-2" /> PORTAL_NODE
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between text-[10px] uppercase font-bold text-slate-300 group-hover:text-pink-400 transition-colors">
-                   <span className="italic">{new Date(snap.created_at).toLocaleDateString()}</span>
-                   <span className="tracking-widest">View Magic</span>
-                </div>
+                 <div className="p-4 border-t border-[#1a1a1a] bg-[#0a0a0a]">
+                    <div className="flex justify-between items-center mb-2">
+                       <span className="text-xs font-mono font-bold text-text-primary">CAPTURE_{item.id.toString().padStart(4, '0')}</span>
+                    </div>
+                    <div className="flex flex-col gap-1 text-[10px] font-mono text-text-secondary">
+                       <span className="flex items-center gap-2"><Clock className="w-3 h-3" /> {new Date(item.timestamp).toLocaleDateString()}</span>
+                       <div className="flex gap-2 mt-1">
+                          <span className="bg-[#1a1a1a] px-1.5 py-0.5 rounded text-primary">{item.charset}</span>
+                          <span className="bg-[#1a1a1a] px-1.5 py-0.5 rounded">{item.resolution}</span>
+                       </div>
+                    </div>
+                 </div>
               </div>
-            </Link>
-          ))}
-        </div>
-      )}
-
-      {/* Footer Branding */}
-      <div className="max-w-7xl mx-auto mt-40 pt-20 border-t border-pink-100 flex flex-col items-center text-center pb-20">
-         <Sparkles className="w-8 h-8 mb-6 text-pink-300 opacity-50" />
-         <h3 className="text-[10px] font-black uppercase tracking-[1em] text-slate-900 mb-4 opacity-100">Public Discovery Grid</h3>
-         <p className="text-[10px] max-w-lg leading-relaxed uppercase text-slate-400 tracking-[0.2em] px-8">
-            Visual representations are high-fidelity captures of aesthetic moments. 
-            Join the global stream by authorizing your session.
-         </p>
+            ))}
+         </div>
       </div>
     </div>
   );

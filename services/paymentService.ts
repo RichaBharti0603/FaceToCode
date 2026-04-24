@@ -42,7 +42,7 @@ export const initiateProCheckout = async (onSuccess: () => void) => {
       address: "Neuralink District 9",
     },
     theme: {
-      color: "#00FF41",
+      color: "#C7A75D",
     },
   };
 

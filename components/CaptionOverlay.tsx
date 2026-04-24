@@ -31,15 +31,15 @@ export const CaptionOverlay: React.FC<CaptionOverlayProps> = ({ caption, isVisib
       left: '50%',
       transform: 'translateX(-50%)',
       width: '80%',
-      background: 'rgba(0, 0, 0, 0.8)',
-      border: '1px solid #00FF41',
+      background: 'var(--bg-surface)',
+      border: '1px solid var(--border)',
       padding: '20px',
-      color: '#00FF41',
+      color: 'var(--text-primary)',
       fontFamily: "'JetBrains Mono', monospace",
       fontSize: '14px',
       lineHeight: '1.6',
       zIndex: 10,
-      boxShadow: '0 0 20px rgba(0, 255, 65, 0.2)',
+      boxShadow: '0 0 20px rgba(0, 0, 0, 0.2)',
       borderRadius: '4px',
       pointerEvents: 'none',
       animation: 'slideUp 0.3s ease-out'
@@ -57,7 +57,7 @@ export const CaptionOverlay: React.FC<CaptionOverlayProps> = ({ caption, isVisib
       <div style={{
         marginTop: '10px',
         height: '2px',
-        background: '#00FF41',
+        background: 'var(--primary)',
         width: '100%',
         animation: 'pulse 1.5s infinite'
       }} />

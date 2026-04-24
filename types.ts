@@ -1,4 +1,4 @@
-export type AestheticFilter = 'none' | 'soft_pink' | 'warm_brown' | 'film' | 'mono_soft' | 'sage';
+export type AestheticFilter = 'none' | 'matrix' | 'hacker' | 'cyberpunk' | 'ghost';
 export type CaptureMode = 'photo' | 'gif';
 
 export interface Sticker {
@@ -20,9 +20,11 @@ export interface AsciiOptions {
   brightness: number;
   contrast: number;
   colorMode: 'bw' | 'color';
-  density: 'soft' | 'airy' | 'binary' | 'blocks' | 'sparkle' | 'premium_soft' | 'ultra_soft';
+  characterSet: 'standard' | 'blocks' | 'binary' | 'custom';
+  customChars?: string;
+  invert?: boolean;
   resolution: number; 
-  theme: 'pink' | 'dreamy' | 'noir' | 'pastel' | 'sparkle' | 'none';
+  theme: 'neon' | 'dark' | 'amber' | 'none';
   autoEmotion?: boolean;
   filter?: AestheticFilter;
   captureMode?: CaptureMode;
@@ -43,14 +45,10 @@ export interface AnalysisResult {
 }
 
 export const DENSITY_MAPS = {
-  soft: " .:-=+*#",
-  airy: " .:+*",
-  binary: " 01",
+  standard: " .:-=+*#%@",
   blocks: " ░▒▓█",
-  sparkle: " .·:+*", 
-  premium_soft: " . · : * +",
-  ultra_soft: "  .  ·  ",
-  dusky: " .:-=+*"
+  binary: " 01",
+  custom: " .:-=+*#%@"
 };
 
 export type PhotoboothState = 'landing' | 'live' | 'countdown' | 'review' | 'delivery';
@@ -80,33 +78,21 @@ export interface VisualPreset {
 
 export const VISUAL_PRESETS: VisualPreset[] = [
   { 
-    id: 'heritage_sandstone', 
-    name: 'heritage sandstone', 
-    icon: '🏰',
-    options: { lightMode: true, theme: 'none', colorMode: 'bw', density: 'dusky', fontSize: 11, resolution: 0.18, contrast: 1.0, brightness: 1.0, filter: 'warm_brown' } 
+    id: 'terminal_green', 
+    name: 'TERMINAL_GREEN', 
+    icon: '💻',
+    options: { lightMode: false, theme: 'neon', colorMode: 'bw', characterSet: 'standard', fontSize: 10, resolution: 0.2, contrast: 1.2, brightness: 1.0, filter: 'matrix', invert: false } 
   },
   { 
-    id: 'ethereal_glow', 
-    name: 'ethereal glow', 
-    icon: '✨',
-    options: { lightMode: true, theme: 'dreamy', colorMode: 'color', density: 'ultra_soft', fontSize: 13, resolution: 0.14, contrast: 0.85, brightness: 1.1, filter: 'soft_pink' } 
+    id: 'binary_core', 
+    name: 'BINARY_CORE', 
+    icon: '01',
+    options: { lightMode: false, theme: 'neon', colorMode: 'bw', characterSet: 'binary', fontSize: 8, resolution: 0.25, contrast: 1.5, brightness: 1.0, filter: 'hacker', invert: false } 
   },
   { 
-    id: 'vintage_monsoon', 
-    name: 'vintage monsoon', 
-    icon: '🌧️',
-    options: { lightMode: true, theme: 'none', colorMode: 'color', density: 'soft', fontSize: 10, resolution: 0.22, contrast: 1.1, brightness: 0.9, filter: 'film' } 
-  },
-  { 
-    id: 'royal_sepia', 
-    name: 'royal sepia', 
-    icon: '📜',
-    options: { lightMode: true, theme: 'noir', colorMode: 'bw', density: 'soft', fontSize: 12, resolution: 0.16, contrast: 1.0, brightness: 1.0, filter: 'mono_soft' } 
-  },
-  { 
-    id: 'haveli_morning', 
-    name: 'haveli morning', 
-    icon: '🌅',
-    options: { lightMode: true, theme: 'none', colorMode: 'color', density: 'soft', fontSize: 11, resolution: 0.18, contrast: 0.9, brightness: 1.15, filter: 'sage' } 
+    id: 'cyberpunk_glow', 
+    name: 'CYBERPUNK_GLOW', 
+    icon: '🌆',
+    options: { lightMode: false, theme: 'neon', colorMode: 'color', characterSet: 'blocks', fontSize: 12, resolution: 0.15, contrast: 1.1, brightness: 1.1, filter: 'cyberpunk', invert: false } 
   }
 ];

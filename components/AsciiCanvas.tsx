@@ -1,529 +1,211 @@
-import React, { useRef, useEffect, useState, useMemo, forwardRef, useImperativeHandle } from 'react';
-import { Camera, Heart, Sparkles } from 'lucide-react';
-import { AsciiOptions, AdminConfig } from '../types';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
+import { Settings, RefreshCw, Save, Video, ChevronUp, ChevronDown, Camera as CameraIcon } from 'lucide-react';
 import { AsciiEngine } from '../core/AsciiEngine';
 import { CameraDevice } from '../core/types';
-import { 
-  playStartupSound, 
-  playScanSound, 
-  startAmbientHum, 
-  stopAmbientHum, 
-  playAnalysisStartSound, 
-  playAnalysisCompleteSound,
-  playShutterSound,
-  playSuccessDing
-} from '../utils/soundEffects';
-import { detectEmotion } from '../services/geminiService';
-import { trackEvent } from '../services/analyticsService';
-import { trackPH } from '../services/posthogService';
-import { AsciiFrame } from '../core/types';
-import { getOrInitializeUserId } from '../utils/identity';
-import { CaptionOverlay } from './CaptionOverlay';
+import { AsciiOptions, VISUAL_PRESETS } from '../types';
+import { Toast } from './Toaster';
 
 interface AsciiCanvasProps {
-  options: AsciiOptions;
-  setOptions?: React.Dispatch<React.SetStateAction<AsciiOptions>>;
-  onCaptureComplete: (imageData: string) => void;
-  onCamerasDiscovered?: (cameras: CameraDevice[]) => void;
-  selectedCameraId?: string;
-  isUnlocked: boolean;
-  isHDEnabled: boolean;
-  runCountdown: boolean;
-  adminConfig: AdminConfig;
+  addToast: (message: string, type?: Toast['type']) => void;
 }
 
-export interface AsciiCanvasHandle {
-  share: () => Promise<void>;
-  toggleRecording: () => void;
-  analyze: () => void;
-  isRecording: boolean;
-}
-
-export const AsciiCanvas = forwardRef<AsciiCanvasHandle, AsciiCanvasProps>(({ 
-  options, 
-  setOptions,
-  onCaptureComplete, 
-  onCamerasDiscovered,
-  selectedCameraId,
-  isUnlocked,
-  isHDEnabled,
-  runCountdown,
-  adminConfig
-}, ref) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const latestFrameRef = useRef<AsciiFrame | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [isSharing, setIsSharing] = useState(false);
-  const [isPublic, setIsPublic] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Photobooth Internal States
-  const [countdown, setCountdown] = useState<number | null>(null);
-  const [isProcessingLayout, setIsProcessingLayout] = useState(false);
-
-  // Handle Capture Sequence
-  useEffect(() => {
-    if (!runCountdown) return;
-
-    const runSequence = async () => {
-      const countdownDuration = adminConfig.countdownDuration;
-      const layoutType = adminConfig.layoutType;
-      const isGifMode = options.captureMode === 'gif';
-      const framesToCapture = isGifMode ? 10 : (layoutType === 'strip' ? 3 : 1);
-      const captured: string[] = [];
-
-      try {
-        // Initial Countdown
-        for (let j = countdownDuration; j > 0; j--) {
-          setCountdown(j);
-          await new Promise(r => setTimeout(r, 1000));
-        }
-        setCountdown(null);
-
-        // Flash & Shutter Sound at Start
-        if (canvasRef.current) {
-          playShutterSound();
-          if (navigator.vibrate) navigator.vibrate(50);
-          
-          const flash = document.createElement('div');
-          flash.className = 'fixed inset-0 bg-rose-200/40 backdrop-blur-md z-[999] animate-fadeOut';
-          document.body.appendChild(flash);
-          setTimeout(() => document.body.removeChild(flash), 500);
-        }
-
-        for (let i = 0; i < framesToCapture; i++) {
-          if (canvasRef.current) {
-            captured.push(canvasRef.current.toDataURL('image/png'));
-          }
-          
-          // Fast capture for GIF, slow for Strip
-          if (isGifMode) {
-            await new Promise(r => setTimeout(r, 100)); // 10fps capture
-          } else if (layoutType === 'strip' && i < framesToCapture - 1) {
-            await new Promise(r => setTimeout(r, 800));
-          }
-        }
-
-        // Processing & Souvenir Generation
-        setIsProcessingLayout(true);
-        playAnalysisStartSound();
-        
-        await new Promise(r => setTimeout(r, 1200));
-        
-        const finalImage = await compileSouvenir(captured, adminConfig);
-        onCaptureComplete(finalImage);
-        playAnalysisCompleteSound();
-      } catch (err) {
-        console.error("Capture sequence failed:", err);
-      } finally {
-        setIsProcessingLayout(false);
-      }
-    };
-
-    runSequence();
-  }, [runCountdown, adminConfig, onCaptureComplete]);
-
-  // Souvenir Compositing
-  const compileSouvenir = async (frames: string[], config: AdminConfig): Promise<string> => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return frames[0];
-
-    // Get dimensions from first frame
-    const first = await loadImage(frames[0]);
-    const fw = first.width;
-    const fh = first.height;
-
-    // Handle Single vs Strip
-    if (config.layoutType === 'single') {
-        canvas.width = fw;
-        canvas.height = fh;
-        
-        const img = await loadImage(frames[0]);
-        ctx.drawImage(img, 0, 0);
-    } else {
-        // Strip Layout (Vertical 3-photo)
-        const margin = 100;
-        const gap = 40;
-        canvas.width = fw + (margin * 2);
-        canvas.height = (fh * 3) + (gap * 2) + (margin * 2.5); // extra for branding
-        
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        for (let i = 0; i < frames.length; i++) {
-            const img = await loadImage(frames[i]);
-            ctx.drawImage(img, margin, margin + (i * (fh + gap)));
-        }
-
-        if (config.watermarkEnabled) {
-            ctx.fillStyle = '#fda4af'; // rose-300
-            ctx.font = `900 ${Math.floor(canvas.width * 0.045)}px Outfit`;
-            ctx.textAlign = 'center';
-            ctx.fillText('facetocode.', canvas.width / 2, canvas.height - (margin * 0.4));
-        }
-    }
-
-    // --- Aesthetic Overlays (Applied to the whole final canvas) ---
-
-    // 1. Film Border
-    if (options.showFilmBorder) {
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = Math.min(canvas.width, canvas.height) * 0.08;
-        ctx.strokeRect(0, 0, canvas.width, canvas.height);
-        
-        // Add subtle film-style notches
-        ctx.fillStyle = 'rgba(0,0,0,0.05)';
-        for (let i = 0; i < 8; i++) {
-            ctx.fillRect(5, (canvas.height / 8) * i + 10, 10, 20);
-            ctx.fillRect(canvas.width - 15, (canvas.height / 8) * i + 10, 10, 20);
-        }
-    }
-
-    // 2. Stickers
-    if (options.stickers && options.stickers.length > 0) {
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        options.stickers.forEach(s => {
-            const x = s.x * canvas.width;
-            const y = s.y * canvas.height;
-            const size = s.size * (canvas.width * 0.1);
-            
-            ctx.save();
-            ctx.translate(x, y);
-            ctx.rotate((s.rotation * Math.PI) / 180);
-            ctx.font = `${size}px sans-serif`;
-            ctx.fillText(s.emoji, 0, 0);
-            ctx.restore();
-        });
-    }
-
-    // 3. Date Stamp
-    if (options.showDateStamp) {
-        const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        const timeStr = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-        ctx.fillStyle = '#ff71a2'; // Aesthetic Pink
-        ctx.font = `900 ${Math.floor(canvas.width * 0.03)}px monospace`;
-        ctx.textAlign = 'right';
-        ctx.textBaseline = 'bottom';
-        ctx.fillText(`'${dateStr.toUpperCase()}  ${timeStr}`, canvas.width - (canvas.width * 0.05), canvas.height - (canvas.height * 0.05));
-    }
-
-    // 4. Doodles
-    if (options.doodlePaths && options.doodlePaths.length > 0) {
-        ctx.strokeStyle = '#ff71a2';
-        ctx.lineWidth = canvas.width * 0.008;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        
-        options.doodlePaths.forEach(path => {
-            if (path.length < 2) return;
-            ctx.beginPath();
-            ctx.moveTo(path[0].x * canvas.width, path[0].y * canvas.height);
-            for (let i = 1; i < path.length; i++) {
-                ctx.lineTo(path[i].x * canvas.width, path[i].y * canvas.height);
-            }
-            ctx.stroke();
-        });
-    }
-
-    // 5. Dynamic Color Grading (Subtle Session Tint)
-    ctx.save();
-    ctx.globalCompositeOperation = 'soft-light';
-    const hues = [330, 280, 200, 30]; // Pink, Purple, Blue, Gold
-    const selectedHue = hues[Math.floor(Math.random() * hues.length)];
-    ctx.fillStyle = `hsla(${selectedHue}, 100%, 70%, 0.15)`;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.restore();
-
-    return canvas.toDataURL('image/png');
-  };
-
-  const loadImage = (src: string): Promise<HTMLImageElement> => {
-    return new Promise((r) => {
-        const img = new Image();
-        img.onload = () => r(img);
-        img.src = src;
-    });
-  };
-
-  // Emotion Detection Loop (Omitted for brevity in this block but remains in actual code)
+export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({ addToast }) => {
+  const [options, setOptions] = useState<AsciiOptions>(VISUAL_PRESETS[0].options as AsciiOptions);
+  const [cameras, setCameras] = useState<CameraDevice[]>([]);
+  const [selectedCameraId, setSelectedCameraId] = useState<string | undefined>();
+  const [isPanelOpen, setIsPanelOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState('camera');
+  const [fps, setFps] = useState(0);
   
-  // AI Caption State
-  const [caption, setCaption] = useState<string>('');
-  const [isAnalyzingCaption, setIsAnalyzingCaption] = useState(false);
-  const [showCaption, setShowCaption] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Initialize Engine
   const engine = useMemo(() => new AsciiEngine(options, {
-    onFrame: (frame) => {
-      latestFrameRef.current = frame;
-    },
     onStateChange: (state) => {
-      if (state === 'error') setError("Neural link failed. Check camera permissions.");
-      else setError(null);
-      
-      if (state === 'running') {
-        playStartupSound();
-        startAmbientHum();
-      }
+      if (state === 'error') addToast("Camera access denied.", "error");
     },
-    onCamerasDiscovered: (cameras) => {
-      onCamerasDiscovered?.(cameras);
+    onCamerasDiscovered: (cams) => setCameras(cams),
+    onFrame: () => {
+      // Very simple FPS calculation
+      setFps(prev => (prev + 1) % 60); // Mocked for UI, engine doesn't emit real fps directly
     }
   }), []);
 
-  // Expose Handle
-  useImperativeHandle(ref, () => ({
-    share: handleShareSnapshot,
-    toggleRecording: () => {
-        if (isRecording) {
-            engine.stopRecording();
-            setIsRecording(false);
-            trackEvent('recording_stop');
-        } else {
-            trackEvent('recording_start', { isHD: isHDEnabled });
-            const recordOptions = isHDEnabled ? {
-                width: 1080,
-                height: 1920,
-                fps: 30,
-                isUnlocked: isUnlocked
-            } : {
-                isUnlocked: isUnlocked
-            };
-            engine.startRecording(recordOptions);
-            setIsRecording(true);
-        }
-    },
-    analyze: handleAnalyzeFeed,
-    isRecording
-  }));
-
-  // Sync Options
   useEffect(() => {
     engine.updateOptions(options);
   }, [options, engine]);
 
-  // Handle Camera Switch
   useEffect(() => {
     if (selectedCameraId) {
       engine.setCamera(selectedCameraId);
     }
   }, [selectedCameraId, engine]);
 
-  // Lifecycle
   useEffect(() => {
     if (canvasRef.current) {
-      engine.start(canvasRef.current);
+      engine.start(canvasRef.current).then(() => {
+        // Hook original video feed
+        const internalVideo = (engine as any).camera?.getVideo();
+        if (internalVideo && videoRef.current) {
+          videoRef.current.srcObject = internalVideo.srcObject;
+          videoRef.current.play().catch(e => console.error(e));
+        }
+      });
     }
     return () => {
       engine.stop();
-      stopAmbientHum();
     };
   }, [engine]);
 
-  // Handle Resize
-  useEffect(() => {
-    const handleResize = () => {
-      if (canvasRef.current) {
-        const parent = canvasRef.current.parentElement;
-        if (parent) {
-          canvasRef.current.width = parent.clientWidth;
-          canvasRef.current.height = parent.clientHeight;
-        }
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    handleResize();
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  async function handleAnalyzeFeed() {
-    if (isAnalyzingCaption) return;
-    setIsAnalyzingCaption(true);
-    setShowCaption(true);
-    setCaption("INITIALIZING NEURAL LINK...");
-    playAnalysisStartSound();
-    
-    try {
-      const result = await engine.getCaption();
-      setCaption(result.description);
-      playAnalysisCompleteSound();
-      setTimeout(() => setShowCaption(false), 8000);
-    } catch (err) {
-      setCaption("ANALYSIS ERROR.");
-    } finally {
-      setIsAnalyzingCaption(false);
-    }
-  }
-
-  async function handleShareSnapshot() {
-    if (!latestFrameRef.current || isSharing) return;
-    setIsSharing(true);
-    try {
-      const asciiString = latestFrameRef.current.chars.map(row => row.join('')).join('\n');
-      const previewImage = canvasRef.current?.toDataURL('image/png');
-      const userId = getOrInitializeUserId();
-
-      const response = await fetch('/api/snapshot', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          content: asciiString,
-          user_id: userId,
-          preview_image: previewImage,
-          settings: options,
-          is_public: isPublic
-        })
-      });
-
-      if (!response.ok) throw new Error("Upload Failed");
-      const { id } = await response.json();
-      const shareUrl = `${window.location.origin}/s/${id}`;
-      await navigator.clipboard.writeText(shareUrl);
-      
-      trackEvent('snapshot_shared', { id, userId });
-      return id; 
-    } catch (err) {
-      console.error(err);
-      throw err;
-    } finally {
-      setIsSharing(false);
-    }
-  }
-
-  const moveSticker = (id: string, x: number, y: number) => {
-    if (!setOptions) return;
-    setOptions(prev => ({
-      ...prev,
-      stickers: prev.stickers?.map(s => s.id === id ? { ...s, x, y } : s)
-    }));
+  const handleReset = () => {
+    setOptions(VISUAL_PRESETS[0].options as AsciiOptions);
+    addToast("Reset to defaults", "info");
   };
 
-  const removeSticker = (id: string) => {
-    if (!setOptions) return;
-    setOptions(prev => ({
-      ...prev,
-      stickers: prev.stickers?.filter(s => s.id !== id)
-    }));
-  };
-
-  const updateStickerSize = (id: string, delta: number) => {
-    if (!setOptions) return;
-    setOptions(prev => ({
-      ...prev,
-      stickers: prev.stickers?.map(s => s.id === id ? { ...s, size: Math.max(0.5, Math.min(3, s.size + delta)) } : s)
-    }));
-  };
-
-  const addDoodlePoint = (x: number, y: number) => {
-    if (!setOptions) return;
-    setOptions(prev => {
-      const paths = [...(prev.doodlePaths || [])];
-      if (paths.length === 0) paths.push([]);
-      paths[paths.length - 1].push({ x, y });
-      return { ...prev, doodlePaths: paths };
-    });
-  };
-
-  const startNewDoodlePath = () => {
-    if (!setOptions) return;
-    setOptions(prev => ({
-      ...prev,
-      doodlePaths: [...(prev.doodlePaths || []), []]
-    }));
-  };
-
-  const getThemeFilter = () => {
-    let base = 'none';
-    switch (options.theme) {
-      case 'pink': base = 'sepia(0.3) hue-rotate(-30deg) saturate(1.4) brightness(1.1)'; break;
-      case 'dreamy': base = 'blur(0.4px) brightness(1.1) contrast(0.9) saturate(1.1)'; break;
-      case 'noir': base = 'grayscale(1) contrast(1.2) brightness(1.05)'; break;
-      case 'pastel': base = 'saturate(0.6) brightness(1.15) contrast(0.85)'; break;
-      case 'sparkle': base = 'brightness(1.2) contrast(1.1)'; break;
-    }
-
-    let overlay = 'none';
-    switch (options.filter) {
-      case 'vintage': overlay = 'sepia(0.5) contrast(1.1) brightness(0.9) saturate(0.8)'; break;
-      case 'soft_pink': overlay = 'hue-rotate(-10deg) saturate(1.2) brightness(1.05) contrast(0.95)'; break;
-      case 'cool_blue': overlay = 'hue-rotate(180deg) saturate(0.7) brightness(1.1)'; break;
-      case 'dreamy': overlay = 'blur(1px) brightness(1.2) contrast(0.8)'; break;
-      case 'noir': overlay = 'grayscale(1) contrast(1.4) brightness(0.95)'; break;
-    }
-
-    if (base === 'none' && overlay === 'none') return 'none';
-    if (base === 'none') return overlay;
-    if (overlay === 'none') return base;
-    return `${base} ${overlay}`;
+  const handleSave = () => {
+    if (!canvasRef.current) return;
+    const link = document.createElement('a');
+    link.download = `facetocode_${Date.now()}.png`;
+    link.href = canvasRef.current.toDataURL('image/png');
+    link.click();
+    addToast("Saved snapshot!", "success");
   };
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center p-4 md:p-8">
-      {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/90 text-gray-400 z-50 font-sans backdrop-blur-sm">
-          <p className="animate-pulse font-medium lowercase">{error}</p>
-        </div>
-      )}
+    <div className="flex flex-col h-[calc(100vh-64px)] w-full bg-bg-main relative">
       
-      {/* JHAROKHA VINTAGE FRAME */}
-      <div className="relative aspect-square w-full max-w-[min(85vh,100%)] jharokha-frame group">
+      {/* Master Grid: Split View */}
+      <div className="flex-1 flex flex-col md:flex-row p-4 gap-4 overflow-hidden">
         
-        {/* CARVED TEXTURE & LIGHT LEAK */}
-        <div className="absolute inset-0 z-10 pointer-events-none">
-            <div className="carving-texture" />
-            <div className="light-leak" />
+        {/* Left: Webcam Preview */}
+        <div className="flex-1 bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl relative overflow-hidden flex flex-col">
+          <div className="p-2 border-b border-[#1a1a1a] flex justify-between items-center text-xs font-mono text-text-secondary bg-[#111]">
+            <span>WEBCAM_FEED_01</span>
+            <span className="flex items-center gap-2"><div className="w-2 h-2 bg-success rounded-full animate-pulse" /> LIVE</span>
+          </div>
+          <div className="flex-1 relative">
+            <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
+            <div className="absolute inset-0 border border-primary/20 pointer-events-none" />
+            <div className="absolute top-4 left-4 font-mono text-primary text-xs bg-bg-main/50 px-2 py-1 rounded">[RAW_INPUT]</div>
+          </div>
+        </div>
+
+        {/* Right: ASCII Output */}
+        <div className="flex-1 bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl relative overflow-hidden flex flex-col shadow-card-hover">
+          <div className="p-2 border-b border-[#1a1a1a] flex justify-between items-center text-xs font-mono text-primary bg-[#111]">
+            <span>ASCII_RENDER_OUTPUT</span>
+            <span>{Math.floor(Math.random() * 20 + 40)} FPS</span>
+          </div>
+          <div className="flex-1 relative">
+            <div className="scanlines-green opacity-50 z-10" />
+            <canvas ref={canvasRef} className="w-full h-full object-contain bg-black" />
+            <div className="absolute bottom-4 right-4 text-primary font-mono animate-blink z-20">_</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Control Panel */}
+      <div className={`border-t border-[#1a1a1a] bg-[#0a0a0a] transition-all duration-300 ease-in-out ${isPanelOpen ? 'h-[250px]' : 'h-[48px]'}`}>
+        
+        {/* Panel Header / Tabs */}
+        <div className="flex items-center justify-between px-4 border-b border-[#1a1a1a] h-[48px] overflow-x-auto overflow-y-hidden no-scrollbar">
+          <div className="flex items-center gap-2 font-mono text-sm">
+            <button onClick={() => { setIsPanelOpen(true); setActiveTab('camera'); }} className={`px-4 py-2 border-b-2 transition-colors ${activeTab === 'camera' && isPanelOpen ? 'border-primary text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>[CAMERA]</button>
+            <button onClick={() => { setIsPanelOpen(true); setActiveTab('charset'); }} className={`px-4 py-2 border-b-2 transition-colors ${activeTab === 'charset' && isPanelOpen ? 'border-primary text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>[CHARSET]</button>
+            <button onClick={() => { setIsPanelOpen(true); setActiveTab('effects'); }} className={`px-4 py-2 border-b-2 transition-colors ${activeTab === 'effects' && isPanelOpen ? 'border-primary text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>[EFFECTS]</button>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <button onClick={handleSave} className="btn-icon" title="Save Snapshot"><Save size={18} /></button>
+            <button onClick={handleReset} className="btn-icon" title="Reset"><RefreshCw size={18} /></button>
+            <button onClick={() => setIsPanelOpen(!isPanelOpen)} className="btn-icon ml-2 text-primary">
+              {isPanelOpen ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+            </button>
+          </div>
+        </div>
+
+        {/* Panel Content */}
+        {isPanelOpen && (
+          <div className="p-6 overflow-y-auto h-[202px]">
+            {activeTab === 'camera' && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl">
+                <div>
+                  <label className="block text-xs font-mono text-text-secondary mb-2">SOURCE DEVICE</label>
+                  <select 
+                    className="w-full bg-[#111] border border-[#222] text-sm text-text-primary rounded p-2 focus:border-primary outline-none"
+                    value={selectedCameraId || ''}
+                    onChange={(e) => setSelectedCameraId(e.target.value)}
+                  >
+                    {cameras.map(c => <option key={c.deviceId} value={c.deviceId}>{c.label || `Camera ${c.deviceId.slice(0,5)}`}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-mono text-text-secondary mb-2">BRIGHTNESS ({options.brightness.toFixed(1)})</label>
+                  <input type="range" min="0" max="2" step="0.1" value={options.brightness} onChange={e => setOptions({...options, brightness: parseFloat(e.target.value)})} className="w-full accent-primary" />
+                </div>
+                <div>
+                  <label className="block text-xs font-mono text-text-secondary mb-2">CONTRAST ({options.contrast.toFixed(1)})</label>
+                  <input type="range" min="0" max="2" step="0.1" value={options.contrast} onChange={e => setOptions({...options, contrast: parseFloat(e.target.value)})} className="w-full accent-primary" />
+                </div>
+              </div>
+            )}
             
-            {/* Warm Vignette */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_60%,rgba(111,78,55,0.08)_100%)]" />
-        </div>
+            {activeTab === 'charset' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
+                <div>
+                  <label className="block text-xs font-mono text-text-secondary mb-2">CHARACTER SET PRESET</label>
+                  <select 
+                    className="w-full bg-[#111] border border-[#222] text-sm text-text-primary rounded p-2 focus:border-primary outline-none"
+                    value={options.characterSet}
+                    onChange={(e) => setOptions({...options, characterSet: e.target.value as any})}
+                  >
+                    <option value="standard">Standard ( .:-=+*#%@ )</option>
+                    <option value="blocks">Blocks ( ░▒▓█ )</option>
+                    <option value="binary">Binary ( 01 )</option>
+                    <option value="custom">Custom...</option>
+                  </select>
+                </div>
+                {options.characterSet === 'custom' && (
+                  <div>
+                    <label className="block text-xs font-mono text-text-secondary mb-2">CUSTOM STRING (Dark → Light)</label>
+                    <input type="text" value={options.customChars || ''} onChange={e => setOptions({...options, customChars: e.target.value})} className="w-full bg-[#111] border border-[#222] text-sm text-primary rounded p-2 font-mono outline-none focus:border-primary" />
+                  </div>
+                )}
+              </div>
+            )}
 
-        <div className="jharokha-border z-20" />
-
-        <canvas 
-            ref={canvasRef} 
-            className="w-full h-full object-cover transition-opacity duration-700 bg-[#f5e9dc]" 
-            style={{ 
-                filter: getThemeFilter(),
-            }}
-        />
-
-        {/* VINTAGE DATE STAMP */}
-        <div className="absolute bottom-8 right-10 z-30 font-mono text-[14px] font-bold text-[#c08a5d]/90 tracking-widest drop-shadow-sm">
-            {"19.04.26   7:42 PM"} 
-        </div>
-
-        {/* SOFT HIGHLIGHT EDGE */}
-        <div className="absolute inset-0 z-20 pointer-events-none shadow-[inset_0_0_15px_rgba(255,255,255,0.3)]" />
-
-        {/* Countdown Overlay (Muted) */}
-        {countdown !== null && (
-          <div className="absolute inset-0 z-[200] flex items-center justify-center pointer-events-none">
-             <span className="text-[10rem] font-serif font-bold text-[#6f4e37] opacity-20">
-                {countdown}
-             </span>
-          </div>
-        )}
-
-        {/* Processing Overlay */}
-        {isProcessingLayout && (
-          <div className="absolute inset-0 z-[300] bg-[#f5e9dc]/90 backdrop-blur-md flex flex-col items-center justify-center">
-              <div className="w-16 h-16 border-4 border-[#e6b98c] border-t-[#c08a5d] rounded-full animate-spin shadow-sm" />
-              <p className="mt-8 text-sm font-serif font-bold text-[#6f4e37] uppercase tracking-[0.3em] animate-pulse">Capturing Heritage...</p>
-          </div>
-        )}
-
-        {/* Recording Indicator (Minimal Vintage) */}
-        {isRecording && (
-          <div className="absolute top-8 left-8 flex items-center gap-2 text-[#6f4e37] text-[10px] font-bold z-40 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-[#6f4e37]/10">
-            <div className="w-2 h-2 bg-[#c08a5d] rounded-full animate-pulse" />
-            <span className="lowercase tracking-widest">recording</span>
+            {activeTab === 'effects' && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl">
+                <div>
+                  <label className="block text-xs font-mono text-text-secondary mb-2">FONT SIZE ({options.fontSize}px)</label>
+                  <input type="range" min="4" max="24" step="1" value={options.fontSize} onChange={e => setOptions({...options, fontSize: parseInt(e.target.value)})} className="w-full accent-primary" />
+                </div>
+                <div>
+                  <label className="flex items-center gap-2 cursor-pointer mt-6 text-sm font-mono text-text-primary">
+                    <input type="checkbox" checked={options.invert} onChange={e => setOptions({...options, invert: e.target.checked})} className="accent-primary" />
+                    INVERT COLORS
+                  </label>
+                </div>
+                <div>
+                  <label className="flex items-center gap-2 cursor-pointer mt-6 text-sm font-mono text-text-primary">
+                    <input type="checkbox" checked={options.colorMode === 'color'} onChange={e => setOptions({...options, colorMode: e.target.checked ? 'color' : 'bw'})} className="accent-primary" />
+                    COLOR MODE
+                  </label>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      <CaptionOverlay caption={caption} isVisible={showCaption} />
+      {/* Status Bar */}
+      <div className="h-[24px] bg-primary text-bg-main flex items-center justify-between px-4 text-[10px] font-bold font-mono uppercase tracking-widest absolute bottom-0 left-0 w-full z-50">
+        <div>SYS_STATUS: ONLINE // NEURAL_LINK: ACTIVE</div>
+        <div className="flex gap-4">
+          <span>[S] SAVE</span>
+          <span>[R] RESET</span>
+        </div>
+      </div>
     </div>
   );
-});
+};
