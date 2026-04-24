@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, useState, useMemo } from 'react';
-import { Settings, RefreshCw, Save, Video, ChevronUp, ChevronDown, Camera as CameraIcon } from 'lucide-react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
+import { Settings, RefreshCw, Save, Video, ChevronUp, ChevronDown, Camera as CameraIcon, Disc, StopCircle, RefreshCcw } from 'lucide-react';
 import { AsciiEngine } from '../core/AsciiEngine';
 import { CameraDevice } from '../core/types';
 import { AsciiOptions, VISUAL_PRESETS } from '../types';
@@ -16,6 +16,7 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({ addToast }) => {
   const [isPanelOpen, setIsPanelOpen] = useState(true);
   const [activeTab, setActiveTab] = useState('camera');
   const [fps, setFps] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -71,6 +72,28 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({ addToast }) => {
     addToast("Saved snapshot!", "success");
   };
 
+  const toggleRecording = () => {
+    if (!engine) return;
+    if (isRecording) {
+      engine.stopRecording();
+      setIsRecording(false);
+      addToast("Recording saved", "success");
+    } else {
+      engine.startRecording({ targetWidth: 1280, targetHeight: 720, fps: 30 });
+      setIsRecording(true);
+      addToast("Recording started", "info");
+    }
+  };
+
+  const handleSwitchCamera = useCallback(() => {
+    if (cameras.length > 1) {
+      const currentIndex = cameras.findIndex(c => c.deviceId === selectedCameraId);
+      const nextIndex = (currentIndex + 1) % cameras.length;
+      setSelectedCameraId(cameras[nextIndex].deviceId);
+      addToast("Camera switched", "info");
+    }
+  }, [cameras, selectedCameraId, addToast]);
+
   return (
     <div className="flex flex-col h-[calc(100vh-64px)] w-full bg-bg-main relative">
       
@@ -78,41 +101,70 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({ addToast }) => {
       <div className="flex-1 flex flex-col md:flex-row p-4 gap-4 overflow-hidden">
         
         {/* Left: Webcam Preview */}
-        <div className="flex-1 bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl relative overflow-hidden flex flex-col">
-          <div className="p-2 border-b border-[#1a1a1a] flex justify-between items-center text-xs font-mono text-text-secondary bg-[#111]">
+        <div className="flex-1 bg-bg-surface border border-border rounded-[16px] relative overflow-hidden flex flex-col shadow-md">
+          <div className="p-2 border-b border-border flex justify-between items-center text-xs font-mono text-text-secondary bg-bg-elevated/50 backdrop-blur-sm">
             <span>WEBCAM_FEED_01</span>
             <span className="flex items-center gap-2"><div className="w-2 h-2 bg-success rounded-full animate-pulse" /> LIVE</span>
           </div>
           <div className="flex-1 relative">
             <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
-            <div className="absolute inset-0 border border-primary/20 pointer-events-none" />
-            <div className="absolute top-4 left-4 font-mono text-primary text-xs bg-bg-main/50 px-2 py-1 rounded">[RAW_INPUT]</div>
+            <div className="absolute inset-0 border border-border/20 pointer-events-none" />
+            <div className="absolute top-4 left-4 font-mono text-text-secondary text-xs bg-bg-elevated/80 backdrop-blur px-2 py-1 rounded">[RAW_INPUT]</div>
           </div>
         </div>
 
         {/* Right: ASCII Output */}
-        <div className="flex-1 bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl relative overflow-hidden flex flex-col shadow-card-hover">
-          <div className="p-2 border-b border-[#1a1a1a] flex justify-between items-center text-xs font-mono text-primary bg-[#111]">
+        <div className="flex-1 bg-bg-surface border border-border rounded-[16px] relative overflow-hidden flex flex-col shadow-card-hover">
+          <div className="p-2 border-b border-border flex justify-between items-center text-xs font-mono text-text-secondary bg-bg-elevated/50 backdrop-blur-sm">
             <span>ASCII_RENDER_OUTPUT</span>
             <span>{Math.floor(Math.random() * 20 + 40)} FPS</span>
           </div>
           <div className="flex-1 relative">
-            <div className="scanlines-green opacity-50 z-10" />
-            <canvas ref={canvasRef} className="w-full h-full object-contain bg-black" />
-            <div className="absolute bottom-4 right-4 text-primary font-mono animate-blink z-20">_</div>
+            <div className="scanlines opacity-30 z-10" />
+            <canvas ref={canvasRef} className="w-full h-full object-contain" style={{ backgroundColor: '#0B1A2F' }} />
+            <div className="absolute bottom-4 right-4 text-text-primary font-mono animate-blink z-20">_</div>
           </div>
         </div>
       </div>
 
+      {/* Docked Camera Controls */}
+      <div className="absolute bottom-[280px] left-1/2 transform -translate-x-1/2 z-40 flex items-center gap-6 bg-bg-elevated/80 backdrop-blur-md px-8 py-4 rounded-full border border-border shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+        <button 
+          onClick={handleSwitchCamera}
+          className="w-12 h-12 flex items-center justify-center rounded-full bg-bg-surface border border-border text-text-secondary hover:text-text-primary hover:scale-105 transition-all shadow-sm"
+          title="Switch Camera"
+        >
+          <RefreshCcw size={20} />
+        </button>
+
+        <button 
+          onClick={handleSave}
+          className="w-16 h-16 flex items-center justify-center rounded-full text-white shadow-[0_0_20px_rgba(199,167,93,0.4)] hover:scale-105 active:scale-95 transition-all relative overflow-hidden group"
+          style={{ background: 'linear-gradient(135deg, #1E4A73, #C7A75D)' }}
+          title="Capture Snapshot"
+        >
+          <CameraIcon size={28} className="relative z-10" />
+          <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        </button>
+
+        <button 
+          onClick={toggleRecording}
+          className={`w-12 h-12 flex items-center justify-center rounded-full border transition-all shadow-sm hover:scale-105 ${isRecording ? 'bg-error/20 border-error text-error animate-pulse' : 'bg-bg-surface border-border text-text-secondary hover:text-text-primary'}`}
+          title={isRecording ? "Stop Recording" : "Start Recording"}
+        >
+          {isRecording ? <StopCircle size={24} /> : <Disc size={24} />}
+        </button>
+      </div>
+
       {/* Bottom Control Panel */}
-      <div className={`border-t border-[#1a1a1a] bg-[#0a0a0a] transition-all duration-300 ease-in-out ${isPanelOpen ? 'h-[250px]' : 'h-[48px]'}`}>
+      <div className={`border-t border-border bg-bg-main transition-all duration-300 ease-in-out ${isPanelOpen ? 'h-[250px]' : 'h-[48px]'}`}>
         
         {/* Panel Header / Tabs */}
-        <div className="flex items-center justify-between px-4 border-b border-[#1a1a1a] h-[48px] overflow-x-auto overflow-y-hidden no-scrollbar">
+        <div className="flex items-center justify-between px-4 border-b border-border h-[48px] overflow-x-auto overflow-y-hidden no-scrollbar bg-bg-elevated/50">
           <div className="flex items-center gap-2 font-mono text-sm">
-            <button onClick={() => { setIsPanelOpen(true); setActiveTab('camera'); }} className={`px-4 py-2 border-b-2 transition-colors ${activeTab === 'camera' && isPanelOpen ? 'border-primary text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>[CAMERA]</button>
-            <button onClick={() => { setIsPanelOpen(true); setActiveTab('charset'); }} className={`px-4 py-2 border-b-2 transition-colors ${activeTab === 'charset' && isPanelOpen ? 'border-primary text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>[CHARSET]</button>
-            <button onClick={() => { setIsPanelOpen(true); setActiveTab('effects'); }} className={`px-4 py-2 border-b-2 transition-colors ${activeTab === 'effects' && isPanelOpen ? 'border-primary text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>[EFFECTS]</button>
+            <button onClick={() => { setIsPanelOpen(true); setActiveTab('camera'); }} className={`px-4 py-2 border-b-2 transition-colors ${activeTab === 'camera' && isPanelOpen ? 'border-accent text-accent' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>[CAMERA]</button>
+            <button onClick={() => { setIsPanelOpen(true); setActiveTab('charset'); }} className={`px-4 py-2 border-b-2 transition-colors ${activeTab === 'charset' && isPanelOpen ? 'border-accent text-accent' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>[CHARSET]</button>
+            <button onClick={() => { setIsPanelOpen(true); setActiveTab('effects'); }} className={`px-4 py-2 border-b-2 transition-colors ${activeTab === 'effects' && isPanelOpen ? 'border-accent text-accent' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>[EFFECTS]</button>
           </div>
           
           <div className="flex items-center gap-2">
@@ -199,11 +251,11 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({ addToast }) => {
       </div>
 
       {/* Status Bar */}
-      <div className="h-[24px] bg-primary text-bg-main flex items-center justify-between px-4 text-[10px] font-bold font-mono uppercase tracking-widest absolute bottom-0 left-0 w-full z-50">
-        <div>SYS_STATUS: ONLINE // NEURAL_LINK: ACTIVE</div>
-        <div className="flex gap-4">
-          <span>[S] SAVE</span>
-          <span>[R] RESET</span>
+      <div className="h-[24px] bg-primary-dark text-text-primary flex items-center justify-between px-4 text-[10px] font-bold font-mono uppercase tracking-widest absolute bottom-0 left-0 w-full z-50 border-t border-border/50">
+        <div>SYS_STATUS: ONLINE // ROYAL_OBSERVATORY: ACTIVE</div>
+        <div className="flex gap-4 opacity-70">
+          <span>[C] CAPTURE</span>
+          <span>[S] SETTINGS</span>
         </div>
       </div>
     </div>

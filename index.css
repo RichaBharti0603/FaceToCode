@@ -151,9 +151,9 @@
     background: linear-gradient(rgba(11,26,47,0.85), rgba(11,26,47,0.95)), url('/assests/images/download.png');
     background-size: cover;
     background-blend-mode: overlay;
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
+    border-radius: 16px;
     box-shadow: var(--shadow-md);
   }
 
