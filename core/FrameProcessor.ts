@@ -47,8 +47,15 @@ export class FrameProcessor {
     processingCtx.scale(-1, 1);
     processingCtx.translate(-cols, 0);
     
-    // Terminal style filtering (Sharper, more contrast)
-    processingCtx.filter = `contrast(${options.contrast}) brightness(${options.brightness})`;
+    // Terminal style filtering + Contrast Boost (+10%)
+    let filterString = `contrast(${options.contrast * 1.1}) brightness(${options.brightness})`;
+    
+    // Apply new effects
+    if (options.edgeDetection) filterString += ' invert(1) contrast(200%) grayscale(100%)';
+    if (options.hueShift) filterString += ` hue-rotate(${options.hueShift}deg)`;
+    if (options.warmth) filterString += ` sepia(${options.warmth}%)`;
+    
+    processingCtx.filter = filterString;
     processingCtx.drawImage(video, 0, 0, cols, rows);
     processingCtx.filter = 'none';
     processingCtx.restore();

@@ -88,6 +88,8 @@
     z-index: -1;
     pointer-events: none;
     mix-blend-mode: soft-light;
+    will-change: transform;
+    transform: translateZ(0);
   }
 
   h1, h2, h3, h4 {

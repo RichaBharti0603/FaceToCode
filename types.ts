@@ -1,4 +1,4 @@
-export type AestheticFilter = 'none' | 'matrix' | 'hacker' | 'cyberpunk' | 'ghost';
+export type AestheticFilter = 'none' | 'matrix' | 'hacker' | 'cyberpunk' | 'ghost' | 'sepia' | 'royal' | 'ink' | 'pastel' | 'cyber_outline';
 export type CaptureMode = 'photo' | 'gif';
 
 export interface Sticker {
@@ -36,6 +36,13 @@ export interface AsciiOptions {
   memeTextBottom?: string;
   lightMode?: boolean;
   backgroundColor?: string;
+  // New Effect System
+  edgeDetection?: boolean;
+  flickerIntensity?: number;
+  waveDistortion?: number;
+  hueShift?: number;
+  warmth?: number;
+  depthEffect?: boolean;
 }
 
 export interface AnalysisResult {

@@ -50,12 +50,13 @@ export class CanvasRenderer {
       (targetCtx as any).letterSpacing = '1px';
     }
     
-    // Soft glow layer
-    targetCtx.shadowBlur = 5;
+    // Soft glow layer - Reduced blur for clarity
+    targetCtx.shadowBlur = 2;
     targetCtx.shadowColor = 'rgba(199, 167, 93, 0.4)';
 
     // Subtle motion: Micro flicker (simulate CRT shimmer)
-    targetCtx.globalAlpha = Math.random() > 0.95 ? 0.85 : 1.0;
+    const baseFlicker = options.flickerIntensity || 0.05;
+    targetCtx.globalAlpha = Math.random() > (1 - baseFlicker) ? (1 - baseFlicker * 2) : 1.0;
 
     // Color Gradient Rendering (Vertical)
     // top -> #1E3A8A, mid -> #3B82F6, highlight -> #C7A75D
@@ -72,11 +73,16 @@ export class CanvasRenderer {
 
     // Render ASCII Grid
     for (let x = 0; x < gridWidth; x++) {
-      const xPosBase = (x + 0.5) * cellWidth;
+      let xPosBase = (x + 0.5) * cellWidth;
+      
       for (let y = 0; y < gridHeight; y++) {
         // Output Refinement: increase line-height slightly by scaling y-spacing
-        // This stretches the text vertically a tiny bit to increase line-height feel
-        const yPosBase = (y + 0.5) * cellHeight * 1.02;
+        let yPosBase = (y + 0.5) * cellHeight * 1.02;
+        
+        // Wave Distortion
+        if (options.waveDistortion) {
+          xPosBase += Math.sin(time / 500 + y * 0.1) * (options.waveDistortion * 5);
+        }
         
         const idx = y * gridWidth + x;
         const bVal = frame.brightness[idx];
@@ -85,8 +91,19 @@ export class CanvasRenderer {
         
         const normalized = bVal / 255;
         
+        // Depth Effect: background fade, foreground boost
+        if (options.depthEffect) {
+          if (normalized < 0.3) {
+             targetCtx.globalAlpha = 0.3; // fade background
+          } else {
+             targetCtx.globalAlpha = 1.0; // boost foreground
+          }
+        }
+        
         // Edge emphasis: drop characters that are too dark to increase contrast around edges
-        if (normalized < 0.12 && !options.invert) continue;
+        if (normalized < 0.12 && !options.invert) {
+            continue;
+        }
 
         if (options.invert) {
             targetCtx.fillStyle = isColorMode ? '#ffffff' : `rgba(30, 58, 138, ${1 - Math.pow(normalized, 1.1)})`;

@@ -227,21 +227,46 @@ export const AsciiCanvas: React.FC<AsciiCanvasProps> = ({ addToast }) => {
             )}
 
             {activeTab === 'effects' && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-6xl">
+                {/* Visual Settings */}
                 <div>
                   <label className="block text-xs font-mono text-text-secondary mb-2">FONT SIZE ({options.fontSize}px)</label>
                   <input type="range" min="4" max="24" step="1" value={options.fontSize} onChange={e => setOptions({...options, fontSize: parseInt(e.target.value)})} className="w-full accent-primary" />
                 </div>
                 <div>
-                  <label className="flex items-center gap-2 cursor-pointer mt-6 text-sm font-mono text-text-primary">
-                    <input type="checkbox" checked={options.invert} onChange={e => setOptions({...options, invert: e.target.checked})} className="accent-primary" />
-                    INVERT COLORS
-                  </label>
+                  <label className="block text-xs font-mono text-text-secondary mb-2">HUE SHIFT ({options.hueShift || 0}°)</label>
+                  <input type="range" min="0" max="360" step="1" value={options.hueShift || 0} onChange={e => setOptions({...options, hueShift: parseInt(e.target.value)})} className="w-full accent-primary" />
                 </div>
                 <div>
-                  <label className="flex items-center gap-2 cursor-pointer mt-6 text-sm font-mono text-text-primary">
+                  <label className="block text-xs font-mono text-text-secondary mb-2">WARMTH ({options.warmth || 0}%)</label>
+                  <input type="range" min="0" max="100" step="1" value={options.warmth || 0} onChange={e => setOptions({...options, warmth: parseInt(e.target.value)})} className="w-full accent-primary" />
+                </div>
+                <div>
+                  <label className="block text-xs font-mono text-text-secondary mb-2">WAVE DISTORTION ({options.waveDistortion || 0})</label>
+                  <input type="range" min="0" max="5" step="0.1" value={options.waveDistortion || 0} onChange={e => setOptions({...options, waveDistortion: parseFloat(e.target.value)})} className="w-full accent-primary" />
+                </div>
+                <div>
+                  <label className="block text-xs font-mono text-text-secondary mb-2">FLICKER INTENSITY ({options.flickerIntensity || 0})</label>
+                  <input type="range" min="0" max="0.5" step="0.01" value={options.flickerIntensity || 0} onChange={e => setOptions({...options, flickerIntensity: parseFloat(e.target.value)})} className="w-full accent-primary" />
+                </div>
+
+                {/* Toggles */}
+                <div className="col-span-1 md:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-mono text-text-primary bg-[#111] border border-[#222] p-2 rounded hover:border-primary transition-colors">
+                    <input type="checkbox" checked={options.invert || false} onChange={e => setOptions({...options, invert: e.target.checked})} className="accent-primary" />
+                    INVERT
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-mono text-text-primary bg-[#111] border border-[#222] p-2 rounded hover:border-primary transition-colors">
                     <input type="checkbox" checked={options.colorMode === 'color'} onChange={e => setOptions({...options, colorMode: e.target.checked ? 'color' : 'bw'})} className="accent-primary" />
                     COLOR MODE
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-mono text-text-primary bg-[#111] border border-[#222] p-2 rounded hover:border-primary transition-colors">
+                    <input type="checkbox" checked={options.edgeDetection || false} onChange={e => setOptions({...options, edgeDetection: e.target.checked})} className="accent-primary" />
+                    EDGE DETECT
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-mono text-text-primary bg-[#111] border border-[#222] p-2 rounded hover:border-primary transition-colors">
+                    <input type="checkbox" checked={options.depthEffect || false} onChange={e => setOptions({...options, depthEffect: e.target.checked})} className="accent-primary" />
+                    DEPTH EFFECT
                   </label>
                 </div>
               </div>

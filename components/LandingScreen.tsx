@@ -50,7 +50,7 @@ export const LandingScreen: React.FC = () => {
       </nav>
 
       {/* 2. HERO SECTION */}
-      <section className="flex-1 flex flex-col md:flex-row items-center justify-between px-6 lg:px-12 py-20 gap-16 max-w-7xl mx-auto w-full flex-hero">
+      <section className="flex-1 flex flex-col md:flex-row items-center justify-between px-6 lg:px-12 py-10 md:py-0 gap-10 md:gap-16 max-w-7xl mx-auto w-full flex-hero min-h-[calc(100vh-80px)] overflow-hidden">
         
         {/* Left Side: Text & CTA */}
         <div className="flex-1 flex flex-col items-start gap-6 animate-slide-up order-2 md:order-1">
@@ -87,8 +87,8 @@ export const LandingScreen: React.FC = () => {
         </div>
 
         {/* Right Side: Hero Image */}
-        <div className="w-full md:w-[45%] relative order-1 md:order-2 group">
-          <div className="relative rounded-[16px] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
+        <div className="w-full md:w-[45%] relative order-1 md:order-2 group hero-content flex items-center justify-center">
+          <div className="relative rounded-[16px] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.3)] w-full max-h-[80vh] flex items-center">
             <img src={heroImg} alt="Hero" className="w-full h-auto object-cover hero-image" />
             <div className="absolute inset-0 bg-[radial-gradient(rgba(199,167,93,0.2),transparent_70%)] mix-blend-screen pointer-events-none"></div>
           </div>
@@ -195,15 +195,59 @@ export const LandingScreen: React.FC = () => {
       </section>
 
       {/* 5. FOOTER */}
-      <footer className="h-[80px] border-t border-[#1a1a1a] bg-[#0a0a0a] flex items-center justify-between px-6 lg:px-12 text-[12px] text-[#666] font-mono w-full">
-        <div className="flex-1 text-left">
-          © 2026 FaceToCode — <a href="#" className="hover:text-primary">Open source</a>
-        </div>
-        <div className="flex-1 text-center hidden md:block">
-          HTML • CSS • JS • WebRTC
-        </div>
-        <div className="flex-1 text-right">
-          Made with <span className="text-primary">⚡</span> by Antigravity
+      <footer className="relative bg-gradient-to-b from-bg-main to-[#060d18] pt-16 pb-8 border-t border-border overflow-hidden">
+        {/* Subtle Background Texture */}
+        <div className="absolute inset-0 opacity-5 pointer-events-none mix-blend-screen bg-[url('/assests/images/download.png')] bg-cover bg-center"></div>
+        
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+            
+            {/* Logo Column */}
+            <div className="col-span-1 md:col-span-2">
+              <div className="flex items-center gap-3 mb-4">
+                 <img src={logoImg} alt="FaceToCode" className="h-8 drop-shadow-md" />
+                 <span className="font-mono font-bold text-xl text-primary tracking-tight">FaceToCode</span>
+              </div>
+              <p className="text-text-secondary text-sm max-w-md leading-relaxed mb-6">
+                Turn your webcam into a 1980s terminal with real-time ASCII conversion. A premium artistic utility built for the web.
+              </p>
+            </div>
+
+            {/* Product Links */}
+            <div>
+              <h4 className="text-white font-ui font-bold mb-4">Product</h4>
+              <ul className="space-y-3 font-mono text-sm">
+                <li><Link to="/camera" className="text-text-secondary hover:text-accent transition-colors flex items-center gap-2"><span className="text-primary opacity-0 group-hover:opacity-100 transition-opacity">▸</span> Camera</Link></li>
+                <li><Link to="/gallery" className="text-text-secondary hover:text-accent transition-colors flex items-center gap-2"><span className="text-primary opacity-0 group-hover:opacity-100 transition-opacity">▸</span> Gallery</Link></li>
+                <li><Link to="/settings" className="text-text-secondary hover:text-accent transition-colors flex items-center gap-2"><span className="text-primary opacity-0 group-hover:opacity-100 transition-opacity">▸</span> Settings</Link></li>
+              </ul>
+            </div>
+
+            {/* Connect Links */}
+            <div>
+              <h4 className="text-white font-ui font-bold mb-4">Connect</h4>
+              <ul className="space-y-3 font-mono text-sm">
+                <li><Link to="/about" className="text-text-secondary hover:text-accent transition-colors flex items-center gap-2">About & FAQ</Link></li>
+                <li><a href="https://github.com/RichaBharti0603/FaceToCode" target="_blank" rel="noreferrer" className="text-text-secondary hover:text-accent transition-colors flex items-center gap-2">GitHub</a></li>
+                <li><a href="mailto:hello@facetocode.com" className="text-text-secondary hover:text-accent transition-colors flex items-center gap-2">Contact</a></li>
+              </ul>
+              
+              <div className="flex items-center gap-4 mt-6">
+                <a href="https://github.com/RichaBharti0603/FaceToCode" target="_blank" rel="noreferrer" className="text-text-secondary hover:text-accent transition-colors">
+                  <Github size={20} />
+                </a>
+              </div>
+            </div>
+            
+          </div>
+          
+          {/* Divider with Glow */}
+          <div className="h-px w-full bg-gradient-to-r from-transparent via-primary/30 to-transparent mb-8"></div>
+          
+          <div className="flex flex-col md:flex-row items-center justify-between font-mono text-xs text-text-muted">
+            <p>© 2026 FaceToCode. All rights reserved.</p>
+            <p className="mt-2 md:mt-0">Built with <span className="text-error mx-1">❤️</span> by Antigravity</p>
+          </div>
         </div>
       </footer>
     </div>

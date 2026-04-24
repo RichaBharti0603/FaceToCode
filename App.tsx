@@ -4,9 +4,12 @@ import { Settings, Camera, Image as ImageIcon, Info, Github } from 'lucide-react
 
 import { LandingScreen } from './components/LandingScreen';
 import { AsciiCanvas } from './components/AsciiCanvas';
-import { ExploreGallery } from './components/ExploreGallery';
-import { SettingsPanel } from './components/SettingsPanel';
-import { AboutTutorial } from './components/AboutTutorial';
+
+// Lazy load heavy components
+const ExploreGallery = React.lazy(() => import('./components/ExploreGallery').then(module => ({ default: module.ExploreGallery })));
+const SettingsPanel = React.lazy(() => import('./components/SettingsPanel').then(module => ({ default: module.SettingsPanel })));
+const AboutTutorial = React.lazy(() => import('./components/AboutTutorial').then(module => ({ default: module.AboutTutorial })));
+
 
 import logoImg from './assests/images/logo.png';
 
@@ -75,13 +78,15 @@ const App: React.FC = () => {
       <Header />
       
       <main className="flex-1 relative">
-        <Routes>
-          <Route path="/" element={<LandingScreen />} />
-          <Route path="/camera" element={<AsciiCanvas addToast={addToast} />} />
-          <Route path="/gallery" element={<ExploreGallery addToast={addToast} />} />
-          <Route path="/settings" element={<SettingsPanel addToast={addToast} />} />
-          <Route path="/about" element={<AboutTutorial />} />
-        </Routes>
+        <React.Suspense fallback={<div className="flex-1 flex items-center justify-center font-mono text-primary text-xl">Loading...</div>}>
+          <Routes>
+            <Route path="/" element={<LandingScreen />} />
+            <Route path="/camera" element={<AsciiCanvas addToast={addToast} />} />
+            <Route path="/gallery" element={<ExploreGallery addToast={addToast} />} />
+            <Route path="/settings" element={<SettingsPanel addToast={addToast} />} />
+            <Route path="/about" element={<AboutTutorial />} />
+          </Routes>
+        </React.Suspense>
       </main>
     </div>
   );
