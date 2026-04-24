@@ -33,6 +33,7 @@ import { AdminPanel } from './components/AdminPanel';
 import { NavSheet } from './components/NavSheet';
 import { CreativeToolbar } from './components/CreativeToolbar';
 import { CreativeSheet } from './components/CreativeSheet';
+import { DebugPanel } from './components/DebugPanel';
 
 const App: React.FC = () => {
   const [appState, setAppState] = useState<PhotoboothState>('landing');
@@ -163,25 +164,23 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full h-screen bg-[#fff1f5] overflow-hidden selection:bg-pink-100 font-sans cursor-default">
+    <div className="relative w-full h-screen vintage-bg overflow-hidden selection:bg-[#c08a5d]/30 font-sans cursor-default">
+      <div className="pattern-overlay" />
       <div className="grain-overlay" />
       
-      {/* Aesthetic Background Blobs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-pink-200/20 rounded-full blur-[120px] animate-blob" />
-      <div className="absolute bottom-[10%] right-[-5%] w-[35%] h-[35%] bg-purple-200/10 rounded-full blur-[100px] animate-blob" style={{ animationDelay: '2s' }} />
-      <div className="absolute top-[20%] right-[10%] w-[25%] h-[25%] bg-yellow-100/30 rounded-full blur-[80px] animate-blob" style={{ animationDelay: '4s' }} />
-
       <Toaster toasts={toasts} removeToast={(id) => setToasts(t => t.filter(x => x.id !== id))} />
 
       {/* MINIMAL DEVELOPER PANEL */}
-      <DebugPanel 
-        isVisible={isDeveloperMode}
-        fps={debugMetrics.fps}
-        processingTime={debugMetrics.processingTime}
-        filter={options.filter || 'none'}
-        resolution={isHDEnabled ? '1080x1920' : '720x1280'}
-        isRecording={canvasRef.current?.isRecording || false}
-      />
+      {isDeveloperMode && (
+        <DebugPanel 
+          isVisible={isDeveloperMode}
+          fps={debugMetrics.fps}
+          processingTime={debugMetrics.processingTime}
+          filter={options.filter || 'none'}
+          resolution={isHDEnabled ? '1080x1920' : '720x1280'}
+          isRecording={canvasRef.current?.isRecording || false}
+        />
+      )}
 
       <Routes>
         <Route path="/explore" element={<ExploreGallery />} />
@@ -202,14 +201,14 @@ const App: React.FC = () => {
                     onTouchStart={startLongPress}
                     onTouchEnd={endLongPress}
                   >
-                    <span className="text-xl font-bold tracking-tight text-gray-800 lowercase opacity-80 group-hover:opacity-100 transition-opacity">
-                        facetocode.
+                    <span className="text-2xl font-serif tracking-[0.3em] text-[#6f4e37] uppercase opacity-80 group-hover:opacity-100 transition-opacity drop-shadow-sm font-bold">
+                        FACETOCODE.
                     </span>
                   </div>
 
                   <button 
                     onClick={() => setIsNavOpen(true)}
-                    className="pointer-events-auto w-12 h-12 flex items-center justify-center bg-white/40 backdrop-blur-xl border border-white/60 rounded-full shadow-sm text-gray-600 hover:bg-white/80 transition-all hover:scale-105 active:scale-95"
+                    className="pointer-events-auto w-12 h-12 flex items-center justify-center bg-[#c08a5d]/10 backdrop-blur-xl border border-[#c08a5d]/20 rounded-full shadow-sm text-[#6f4e37] hover:bg-[#c08a5d] hover:text-white transition-all hover:scale-110 active:scale-95"
                   >
                      <Grid className="w-5 h-5" />
                   </button>
@@ -247,15 +246,15 @@ const App: React.FC = () => {
                   )}
 
                   {appState === 'review' && capturedSouvenir && (
-                    <div className="absolute inset-0 z-[200] bg-white/60 backdrop-blur-3xl flex items-center justify-center p-8">
+                    <div className="absolute inset-0 z-[200] bg-[#f5e9dc]/80 backdrop-blur-xl flex items-center justify-center p-8">
                        <div className="max-w-xl w-full flex flex-col items-center gap-10 text-center animate-in zoom-in duration-700">
-                          <h2 className="text-4xl font-bold tracking-tight text-gray-900 leading-tight lowercase">magic fragment captured ✨</h2>
-                          <div className="p-4 bg-white shadow-2xl rounded-[32px] border border-pink-100/50 rotate-[-1deg] hover:rotate-0 transition-transform duration-500 overflow-hidden">
+                          <h2 className="text-4xl font-serif font-bold tracking-tight text-[#6f4e37] leading-tight uppercase">Fragment Captured ✨</h2>
+                          <div className="p-4 bg-white/40 shadow-2xl rounded-[32px] border border-white/40 rotate-[-1deg] hover:rotate-0 transition-transform duration-500 overflow-hidden">
                              <img src={capturedSouvenir} className="w-full h-auto rounded-[24px]" alt="Souvenir" />
                           </div>
                           <div className="flex gap-4 w-full">
-                             <button onClick={() => setAppState('live')} className="flex-1 py-5 rounded-full bg-white/50 border border-white text-gray-500 font-medium lowercase transition-all hover:bg-white shadow-sm">Retake</button>
-                             <button onClick={() => setAppState('delivery')} className="flex-[1.5] py-5 px-12 rounded-full bg-pink-400 text-white font-bold lowercase transition-all hover:bg-pink-500 shadow-lg">Keep Magic ✨</button>
+                             <button onClick={() => setAppState('live')} className="flex-1 py-5 rounded-full bg-white/50 border border-white/20 text-[#6f4e37] font-medium uppercase tracking-widest transition-all hover:bg-white shadow-sm">Retake</button>
+                             <button onClick={() => setAppState('delivery')} className="flex-[1.5] py-5 px-12 rounded-full bg-[#c08a5d] text-white font-bold uppercase tracking-widest transition-all hover:bg-[#8b5e3c] shadow-lg">Keep Magic ✨</button>
                           </div>
                        </div>
                     </div>

@@ -467,30 +467,40 @@ export const AsciiCanvas = forwardRef<AsciiCanvasHandle, AsciiCanvasProps>(({
         </div>
       )}
       
-      {/* 1:1 AESTHETIC VIEWFINDER FRAME */}
-      <div className="relative aspect-square w-full max-w-[min(85vh,100%)] overflow-hidden rounded-[20px] bg-white/40 border-[8px] border-white shadow-[inset_0_0_80px_rgba(0,0,0,0.05),0_20px_60px_rgba(0,0,0,0.05)] group">
+      {/* JHAROKHA VINTAGE FRAME */}
+      <div className="relative aspect-square w-full max-w-[min(85vh,100%)] jharokha-frame group">
         
-        {/* VIGNETTE & GRAIN OVERLAY */}
+        {/* CARVED TEXTURE & LIGHT LEAK */}
         <div className="absolute inset-0 z-10 pointer-events-none">
-            <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_40%,rgba(0,0,0,0.08)_100%)]" />
-            <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/p6.png')]" />
+            <div className="carving-texture" />
+            <div className="light-leak" />
+            
+            {/* Warm Vignette */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_60%,rgba(111,78,55,0.08)_100%)]" />
         </div>
+
+        <div className="jharokha-border z-20" />
 
         <canvas 
             ref={canvasRef} 
-            className="w-full h-full object-cover transition-opacity duration-700" 
+            className="w-full h-full object-cover transition-opacity duration-700 bg-[#f5e9dc]" 
             style={{ 
                 filter: getThemeFilter(),
             }}
         />
 
-        {/* SOFT EDGE BLUR (INNER) */}
-        <div className="absolute inset-0 z-20 pointer-events-none shadow-[inset_0_0_40px_rgba(255,255,255,0.4)] backdrop-blur-[0.5px]" />
+        {/* VINTAGE DATE STAMP */}
+        <div className="absolute bottom-8 right-10 z-30 font-mono text-[14px] font-bold text-[#c08a5d]/90 tracking-widest drop-shadow-sm">
+            {"19.04.26   7:42 PM"} 
+        </div>
 
-        {/* Countdown Overlay */}
+        {/* SOFT HIGHLIGHT EDGE */}
+        <div className="absolute inset-0 z-20 pointer-events-none shadow-[inset_0_0_15px_rgba(255,255,255,0.3)]" />
+
+        {/* Countdown Overlay (Muted) */}
         {countdown !== null && (
           <div className="absolute inset-0 z-[200] flex items-center justify-center pointer-events-none">
-             <span className="text-[12rem] font-bold text-white drop-shadow-[0_10px_40px_rgba(0,0,0,0.15)] animate-ping">
+             <span className="text-[10rem] font-serif font-bold text-[#6f4e37] opacity-20">
                 {countdown}
              </span>
           </div>
@@ -498,17 +508,17 @@ export const AsciiCanvas = forwardRef<AsciiCanvasHandle, AsciiCanvasProps>(({
 
         {/* Processing Overlay */}
         {isProcessingLayout && (
-          <div className="absolute inset-0 z-[300] bg-white/60 backdrop-blur-2xl flex flex-col items-center justify-center">
-              <div className="w-12 h-12 border-4 border-pink-100 border-t-pink-400 rounded-full animate-spin" />
-              <p className="mt-6 text-sm font-medium text-pink-400 lowercase animate-pulse">making magic...</p>
+          <div className="absolute inset-0 z-[300] bg-[#f5e9dc]/90 backdrop-blur-md flex flex-col items-center justify-center">
+              <div className="w-16 h-16 border-4 border-[#e6b98c] border-t-[#c08a5d] rounded-full animate-spin shadow-sm" />
+              <p className="mt-8 text-sm font-serif font-bold text-[#6f4e37] uppercase tracking-[0.3em] animate-pulse">Capturing Heritage...</p>
           </div>
         )}
 
-        {/* Recording Indicator (Minimal) */}
+        {/* Recording Indicator (Minimal Vintage) */}
         {isRecording && (
-          <div className="absolute top-6 left-6 flex items-center gap-2 text-rose-400 text-xs font-semibold z-40 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-white">
-            <div className="w-1.5 h-1.5 bg-rose-400 rounded-full animate-pulse" />
-            <span className="lowercase">recording</span>
+          <div className="absolute top-8 left-8 flex items-center gap-2 text-[#6f4e37] text-[10px] font-bold z-40 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-[#6f4e37]/10">
+            <div className="w-2 h-2 bg-[#c08a5d] rounded-full animate-pulse" />
+            <span className="lowercase tracking-widest">recording</span>
           </div>
         )}
       </div>

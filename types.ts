@@ -80,33 +80,33 @@ export interface VisualPreset {
 
 export const VISUAL_PRESETS: VisualPreset[] = [
   { 
-    id: 'soft_pink', 
-    name: 'soft pink', 
-    icon: '🌸',
-    options: { lightMode: true, theme: 'pink', colorMode: 'color', density: 'ultra_soft', fontSize: 13, resolution: 0.12, contrast: 0.8, brightness: 1.2, filter: 'soft_pink' } 
+    id: 'heritage_sandstone', 
+    name: 'heritage sandstone', 
+    icon: '🏰',
+    options: { lightMode: true, theme: 'none', colorMode: 'bw', density: 'dusky', fontSize: 11, resolution: 0.18, contrast: 1.0, brightness: 1.0, filter: 'warm_brown' } 
   },
   { 
-    id: 'warm_brown', 
-    name: 'warm brown', 
-    icon: '☕',
-    options: { lightMode: true, theme: 'none', colorMode: 'bw', density: 'dusky', fontSize: 11, resolution: 0.18, contrast: 1.0, brightness: 1.1, filter: 'warm_brown' } 
+    id: 'ethereal_glow', 
+    name: 'ethereal glow', 
+    icon: '✨',
+    options: { lightMode: true, theme: 'dreamy', colorMode: 'color', density: 'ultra_soft', fontSize: 13, resolution: 0.14, contrast: 0.85, brightness: 1.1, filter: 'soft_pink' } 
   },
   { 
-    id: 'film', 
-    name: 'film', 
-    icon: '🎞',
+    id: 'vintage_monsoon', 
+    name: 'vintage monsoon', 
+    icon: '🌧️',
     options: { lightMode: true, theme: 'none', colorMode: 'color', density: 'soft', fontSize: 10, resolution: 0.22, contrast: 1.1, brightness: 0.9, filter: 'film' } 
   },
   { 
-    id: 'mono_soft', 
-    name: 'mono soft', 
-    icon: '🖤',
-    options: { lightMode: false, theme: 'noir', colorMode: 'bw', density: 'soft', fontSize: 12, resolution: 0.15, contrast: 0.9, brightness: 1.0, filter: 'mono_soft' } 
+    id: 'royal_sepia', 
+    name: 'royal sepia', 
+    icon: '📜',
+    options: { lightMode: true, theme: 'noir', colorMode: 'bw', density: 'soft', fontSize: 12, resolution: 0.16, contrast: 1.0, brightness: 1.0, filter: 'mono_soft' } 
   },
   { 
-    id: 'sage', 
-    name: 'sage', 
-    icon: '🌿',
-    options: { lightMode: true, theme: 'none', colorMode: 'color', density: 'soft', fontSize: 11, resolution: 0.18, contrast: 0.85, brightness: 1.15, filter: 'sage' } 
+    id: 'haveli_morning', 
+    name: 'haveli morning', 
+    icon: '🌅',
+    options: { lightMode: true, theme: 'none', colorMode: 'color', density: 'soft', fontSize: 11, resolution: 0.18, contrast: 0.9, brightness: 1.15, filter: 'sage' } 
   }
 ];

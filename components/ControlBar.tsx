@@ -19,19 +19,19 @@ export const ControlBar: React.FC<ControlBarProps> = ({
   currentPresetIndex
 }) => {
   return (
-    <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-8 w-full max-w-md px-6">
+    <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-10 w-full max-w-lg px-6 animate-in fade-in slide-in-from-bottom-6 duration-1000">
       
-      {/* 7. FILTER SYSTEM (AESTHETIC SCROLLER) */}
-      <div className="flex items-center gap-4 overflow-x-auto py-2 no-scrollbar mask-fade-edges">
+      {/* VINTAGE STYLE SELECTOR */}
+      <div className="flex items-center gap-4 overflow-x-auto py-3 no-scrollbar px-6 bg-white/40 backdrop-blur-md rounded-full border border-white/40 shadow-sm">
         {VISUAL_PRESETS.map((preset, idx) => (
           <button
             key={preset.id}
             onClick={() => onSelectPreset(idx)}
             className={`
-              flex-shrink-0 w-14 h-14 rounded-full flex items-center justify-center text-xl transition-all duration-300
+              flex-shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-lg transition-all duration-300
               ${currentPresetIndex === idx 
-                ? 'bg-pink-400 text-white shadow-[0_10px_25px_rgba(244,114,182,0.4)] scale-110' 
-                : 'bg-white/60 backdrop-blur-xl border border-white/60 text-gray-500 hover:bg-white'}
+                ? 'bg-[#c08a5d] text-white shadow-md scale-110' 
+                : 'bg-white/50 text-[#6f4e37]/60 hover:text-[#6f4e37] hover:bg-white'}
             `}
             title={preset.name}
           >
@@ -40,30 +40,35 @@ export const ControlBar: React.FC<ControlBarProps> = ({
         ))}
       </div>
 
-      {/* 5. SHUTTER BUTTON (MAIN FOCUS) */}
-      <div className="flex items-center gap-12">
+      {/* SYMMETRICAL CONTROLS */}
+      <div className="flex items-center justify-between w-full max-w-md px-4">
         <button 
           onClick={() => {/* gallery logic */}}
-          className="w-12 h-12 flex items-center justify-center bg-white/40 backdrop-blur-xl border border-white/60 rounded-full text-gray-400 hover:text-pink-400 transition-all"
+          className="w-14 h-14 flex items-center justify-center bg-white/60 border border-white/40 rounded-full text-[#6f4e37] hover:bg-[#c08a5d] hover:text-white transition-all shadow-sm active:scale-90"
         >
-          <Image className="w-5 h-5" />
+          <Image className="w-6 h-6 stroke-[1.5]" />
         </button>
 
-        <div className="relative">
-           <div className="absolute inset-[-12px] bg-pink-200/20 rounded-full blur-2xl animate-pulse" />
+        <div className="relative group">
+           {/* Shutter Halo */}
+           <div className="absolute inset-[-10px] bg-[#c08a5d]/10 rounded-full blur-xl group-hover:bg-[#c08a5d]/20 transition-all" />
+           
            <button 
              onClick={onCapture}
-             className="relative w-[76px] h-[76px] bg-white rounded-full shadow-[0_15px_35px_rgba(0,0,0,0.1),inset_0_0_0_4px_white,inset_0_0_0_6px_rgba(0,0,0,0.05)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center group"
+             className="relative w-28 h-28 bg-[#f5f5f5] border-[1px] border-[#6f4e37]/10 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center justify-center"
            >
-             <div className="w-[60px] h-[60px] rounded-full border border-gray-100 group-hover:bg-pink-50 transition-all" />
+             <div className="w-22 h-22 rounded-full bg-white border border-[#6f4e37]/5 flex items-center justify-center overflow-hidden">
+                <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')]" />
+                <Camera className="w-10 h-10 text-[#6f4e37] opacity-60" />
+             </div>
            </button>
         </div>
 
         <button 
           onClick={onOpenSettings}
-          className="w-12 h-12 flex items-center justify-center bg-white/40 backdrop-blur-xl border border-white/60 rounded-full text-gray-400 hover:text-pink-400 transition-all"
+          className="w-14 h-14 flex items-center justify-center bg-white/60 border border-white/40 rounded-full text-[#6f4e37] hover:bg-[#c08a5d] hover:text-white transition-all shadow-sm active:scale-90"
         >
-          <FlipHorizontal className="w-5 h-5" />
+          <FlipHorizontal className="w-6 h-6 stroke-[1.5]" />
         </button>
       </div>
     </div>

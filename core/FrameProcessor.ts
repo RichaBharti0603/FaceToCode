@@ -106,12 +106,13 @@ export class FrameProcessor {
         const centerFocus = Math.exp(-dist * 1.5) * 0.3 + 1.0; 
         brightness *= centerFocus;
 
-        // 3. CORE FIX: LIGHTEN ENTIRE IMAGE & COMPRESS CONTRAST
-        // Lifts dark areas and prevents black collapse
-        brightness = brightness * 0.6 + 90;
+        // 3. CORE FIX: VINTAGE BRIGHTNESS MAPPING (ETHEREAL)
+        // Lifts dark areas and ensures face visibility with a warm, soft look
+        // Formula: brightness = brightness * 0.75 + 80
+        brightness = brightness * 0.75 + 80;
         
-        // Avoid pure black or pure white technical extremes
-        brightness = Math.max(80, Math.min(220, brightness));
+        // Clamp to avoid pure black technical extremes while keeping it soft
+        brightness = Math.max(80, Math.min(245, brightness));
 
         // 4. KEEP FACIAL FEATURES VISIBLE (EDGE BOOST)
         // Simple horizontal edge detection for detail preservation

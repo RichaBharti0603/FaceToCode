@@ -36,18 +36,18 @@ export class CanvasRenderer {
 
     // 2. Clear canvases and Draw Background
     if (options.lightMode) {
-      // 8. BACKGROUND COLOR (WARM CREAM)
-      ctx.fillStyle = '#f5e6da';
+      // 8. BACKGROUND COLOR (WARM SANDSTONE)
+      ctx.fillStyle = '#f5e9dc';
       ctx.fillRect(0, 0, width, height);
 
-      // 10. ADD SOFT CENTER LIGHTING
-      const lighting = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width * 0.7);
-      lighting.addColorStop(0, 'rgba(255, 255, 255, 0.4)'); // Center Bright
-      lighting.addColorStop(1, 'rgba(0, 0, 0, 0.05)');     // Edges slightly darker
+      // 10. ADD SOFT CENTER VIGNETTE (WARM BROWN)
+      const lighting = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width * 0.8);
+      lighting.addColorStop(0, 'rgba(245, 233, 220, 0)'); // Center Clear
+      lighting.addColorStop(1, 'rgba(111, 78, 55, 0.06)'); // Edges Warm Brown
       ctx.fillStyle = lighting;
       ctx.fillRect(0, 0, width, height);
     } else {
-      ctx.fillStyle = '#2b1d16'; // Deep Dusk Brown
+      ctx.fillStyle = '#f5e9dc'; // Stay on sandstone even in "dark" mode for this theme
       ctx.fillRect(0, 0, width, height);
     }
     this.offscreenCtx.clearRect(0, 0, width, height);
@@ -60,36 +60,35 @@ export class CanvasRenderer {
     const targetCtx = isColorMode ? this.offscreenCtx : ctx;
     
     targetCtx.save();
-    targetCtx.font = `900 ${options.fontSize}px 'JetBrains Mono', monospace`;
+    targetCtx.font = `600 ${options.fontSize}px 'DM Sans', 'Inter', sans-serif`; // Soft sans for characters
     targetCtx.textAlign = 'center';
     targetCtx.textBaseline = 'middle';
     
     // 9. REDUCE CHARACTER HARSHNESS
-    targetCtx.globalAlpha = 0.75;
-    targetCtx.shadowBlur = 0; // Disable previous harsh glow
+    targetCtx.globalAlpha = 0.7;
+    targetCtx.filter = "blur(0.2px)";
+    targetCtx.shadowBlur = 0;
 
-    // 6. BROWN / DUSKY ASCII COLOR PALETTE
-    // 12. REMOVE PURE BLACK OUTPUT (darkest = #6f4e37)
+    // 6. HERITAGE BROWN PALETTE
     const brownPalette = ['#6f4e37', '#8b5e3c', '#c08a5d', '#e6b98c'];
 
-    // A. Advanced Glow & Bloom Pass
+    // A. Advanced Glow & Bloom Pass (Reduced for vintage look)
     const isDreamy = options.theme === 'dreamy' || options.theme === 'pink' || options.filter === 'paris_glow' || options.filter === 'seoul_dream';
     
     if (isDreamy) {
-        // Softened Bloom for dusky look
-        targetCtx.shadowBlur = options.fontSize * 0.4;
-        targetCtx.shadowColor = 'rgba(111, 78, 55, 0.3)'; // Coffee Glow
+        targetCtx.shadowBlur = options.fontSize * 0.15;
+        targetCtx.shadowColor = 'rgba(111, 78, 55, 0.1)';
         
-        targetCtx.globalAlpha = 0.3;
+        targetCtx.globalAlpha = 0.15;
         for (let x = 0; x < gridWidth; x += 3) { 
            for (let y = 0; y < gridHeight; y += 3) {
               const bVal = frame.brightness[y * gridWidth + x];
-              const cIdx = Math.min(3, Math.floor((bVal / 255) * brownPalette.length));
+              const cIdx = Math.min(3, Math.floor(((bVal - 80) / 175) * brownPalette.length));
               targetCtx.fillStyle = brownPalette[cIdx];
               targetCtx.fillText(chars[y][x], (x + 0.5) * cellWidth, (y + 0.5) * cellHeight);
            }
         }
-        targetCtx.globalAlpha = 0.75;
+        targetCtx.globalAlpha = 0.7;
     }
 
     // B. Primary Character Grid Rendering
@@ -100,23 +99,14 @@ export class CanvasRenderer {
         const idx = y * gridWidth + x;
         const bVal = frame.brightness[idx];
         
-        // Color mapping to dusky brown palette
         if (!isColorMode) {
-            const cIdx = Math.min(3, Math.floor((bVal / 255) * brownPalette.length));
+            const cIdx = Math.min(3, Math.floor(((bVal - 80) / 175) * brownPalette.length));
             targetCtx.fillStyle = brownPalette[cIdx];
         } else {
             targetCtx.fillStyle = '#ffffff'; 
         }
 
-        // Interactive Shimmer (Subtle)
-        let xPos = xPosBase;
-        let yPos = yPosBase;
-        if (time > 0) {
-            const sh = Math.sin(time * 0.001 + x * 0.1) * (cellWidth * 0.02);
-            xPos += sh;
-        }
-
-        targetCtx.fillText(chars[y][x], xPos, yPos);
+        targetCtx.fillText(chars[y][x], xPosBase, yPosBase);
       }
     }
     targetCtx.restore();
@@ -128,7 +118,7 @@ export class CanvasRenderer {
       ctx.scale(-1, 1);
       
       // Filter for brown-toned video feed
-      ctx.filter = 'sepia(0.8) contrast(0.9) brightness(1.1) hue-rotate(-10deg)';
+      ctx.filter = 'sepia(0.6) contrast(0.85) brightness(1.1) saturate(0.7)';
       ctx.drawImage(video, 0, 0, width, height);
       ctx.restore();
 
@@ -136,16 +126,15 @@ export class CanvasRenderer {
       ctx.drawImage(this.offscreenCanvas, 0, 0);
       ctx.globalCompositeOperation = 'source-over';
       
-      // Final Aesthetic Wash
       ctx.save();
       ctx.globalCompositeOperation = 'soft-light';
-      ctx.fillStyle = 'rgba(111, 78, 55, 0.1)'; // Coffee Wash
+      ctx.fillStyle = 'rgba(111, 78, 55, 0.12)'; // Heritage Wash
       ctx.fillRect(0, 0, width, height);
       ctx.restore();
     }
 
-    // 5. Final Soft Blur (9. REDUCE CHARACTER HARSHNESS - Subtle blur)
-    ctx.filter = 'blur(0.4px)';
+    // 5. Final Soften Pass
+    ctx.filter = 'blur(0.2px)';
     const temp = ctx.getImageData(0, 0, width, height);
     ctx.putImageData(temp, 0, 0);
     ctx.filter = 'none';

@@ -9,25 +9,31 @@ interface LandingScreenProps {
 
 export const LandingScreen: React.FC<LandingScreenProps> = ({ onStart, isLoading, error }) => {
   return (
-    <div className="fixed inset-0 z-[100] bg-gradient-to-br from-[#fff1f5] via-[#fce7f3] to-[#fff7ed] flex flex-col items-center justify-center p-6 text-gray-600 font-sans overflow-hidden">
-      {/* Animated Floating Blobs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-pink-200/30 rounded-full blur-[120px] animate-blob" />
-      <div className="absolute bottom-[10%] right-[-10%] w-[45%] h-[45%] bg-purple-200/20 rounded-full blur-[100px] animate-blob" style={{ animationDelay: '2s' }} />
-      <div className="absolute top-[20%] right-[10%] w-[30%] h-[30%] bg-rose-100/40 rounded-full blur-[80px] animate-blob" style={{ animationDelay: '4s' }} />
+    <div className="fixed inset-0 z-[100] vintage-bg flex flex-col items-center justify-center p-6 text-[#6f4e37] font-sans overflow-hidden">
+      <div className="pattern-overlay" />
+      <div className="grain-overlay" />
+      
+      {/* Heritage Corner Motifs (Optional based on assets) */}
+      <div className="absolute top-0 left-0 w-32 h-32 opacity-20 pointer-events-none rotate-180">
+          <img src="/assests/images/5e21cdc79b7a0fb1e0e2c176be5d5168.jpg" className="w-full h-full object-contain" alt="" />
+      </div>
+      <div className="absolute bottom-0 right-0 w-32 h-32 opacity-20 pointer-events-none">
+          <img src="/assests/images/5e21cdc79b7a0fb1e0e2c176be5d5168.jpg" className="w-full h-full object-contain" alt="" />
+      </div>
 
-      <div className="relative z-10 flex flex-col items-center max-w-xl text-center gap-12">
-        <div className="flex flex-col items-center gap-4 animate-in fade-in slide-in-from-bottom-10 duration-1000">
-          <h1 className="text-7xl md:text-8xl font-bold tracking-tight text-gray-900 lowercase">
-            FaceToCode ✨
+      <div className="relative z-10 flex flex-col items-center max-w-xl text-center gap-10">
+        <div className="flex flex-col items-center gap-4 animate-in fade-in slide-in-from-bottom-10 duration-1000 p-12 bg-white/30 backdrop-blur-sm rounded-[40px] border border-white/40">
+          <h1 className="text-7xl md:text-8xl font-serif tracking-[0.2em] text-[#6f4e37] uppercase drop-shadow-sm">
+            FACETOCODE.
           </h1>
-          <p className="text-lg md:text-xl text-pink-400 font-medium lowercase">
-            turn your face into art
+          <p className="text-sm md:text-base text-[#6f4e37]/60 font-medium tracking-[0.5em] uppercase font-sans">
+            Heritage Portrait Engine • Edition II
           </p>
         </div>
 
         <div className="flex flex-col gap-6 w-full items-center animate-in fade-in slide-in-from-bottom-20 duration-1000 delay-300">
           {error && (
-            <div className="text-rose-500 text-xs font-semibold bg-white/60 backdrop-blur-md px-6 py-2 rounded-full border border-rose-100 mb-4 animate-bounce">
+            <div className="text-white text-[10px] font-bold bg-[#c08a5d]/80 backdrop-blur-md px-8 py-3 rounded-full border border-white/30 mb-4 animate-bounce uppercase tracking-widest">
               {error}
             </div>
           )}
@@ -36,20 +42,20 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onStart, isLoading
             onClick={onStart}
             disabled={isLoading}
             className={`
-              relative h-20 px-12 bg-gradient-to-r from-pink-400 to-rose-400 text-white font-bold rounded-full transition-all
-              shadow-[0_15px_40px_rgba(244,114,182,0.3)] hover:shadow-[0_20px_50px_rgba(244,114,182,0.5)]
-              ${isLoading ? 'opacity-50 cursor-wait' : 'hover:scale-105 active:scale-95'}
+              relative btn-matte-terracotta h-20 px-20 font-bold rounded-full transition-all border border-white/20
+              shadow-lg hover:scale-105 active:scale-95
+              ${isLoading ? 'opacity-50 cursor-wait' : ''}
             `}
           >
-            <span className="text-xl tracking-tight">
-                {isLoading ? 'making magic...' : 'Start Camera 💖'}
+            <span className="text-xl tracking-[0.3em] uppercase font-serif">
+                {isLoading ? 'Awakening...' : 'Begin Experience'}
             </span>
           </button>
         </div>
       </div>
 
-      <footer className="absolute bottom-12 text-[10px] text-gray-400 font-medium tracking-[0.2em] lowercase opacity-60">
-         facetocode. studio • aesthetic fragments
+      <footer className="absolute bottom-12 text-[10px] text-[#6f4e37]/40 font-bold tracking-[0.5em] uppercase font-serif italic">
+         FACETOCODE. STUDIO • HERITAGE DIGITAL FRAGMENTS
       </footer>
     </div>
   );
