@@ -45,7 +45,7 @@ export interface AnalysisResult {
 }
 
 export const DENSITY_MAPS = {
-  standard: " .:-=+*#%@",
+  standard: " .,:;ox%#@❤★✦",
   blocks: " ░▒▓█",
   binary: " 01",
   custom: " .:-=+*#%@"

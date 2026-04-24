@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Camera, Palette, Save, Github, Play, CheckCircle2, Circle } from 'lucide-react';
 
+import logoImg from '../assests/images/logo.png';
+import heroImg from '../assests/images/hero.jpg';
+
+
 export const LandingScreen: React.FC = () => {
   const navigate = useNavigate();
   const [frame, setFrame] = useState(0);
@@ -27,10 +31,7 @@ export const LandingScreen: React.FC = () => {
       {/* 1. NAVBAR */}
       <nav className="h-[80px] px-6 lg:px-12 flex items-center justify-between border-b border-border bg-bg-main/80 backdrop-blur-md sticky top-0 z-50">
         <div className="flex items-center gap-4">
-          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-bg-main font-bold">
-            {'<'}
-          </div>
-          <span className="font-mono font-bold text-primary text-xl tracking-tight">FaceToCode</span>
+          <img src={logoImg} alt="FaceToCode Logo" className="h-[36px] md:h-[44px] w-auto drop-shadow-md" />
         </div>
         
         <div className="hidden md:flex items-center gap-8 font-mono text-sm">
@@ -41,26 +42,18 @@ export const LandingScreen: React.FC = () => {
         </div>
 
         <div className="flex items-center">
-          <a href="https://github.com/facetocode" target="_blank" rel="noreferrer" className="w-6 h-6 hover:scale-105 transition-transform hover:text-primary">
+          <a href="https://github.com/RichaBharti0603/FaceToCode" target="_blank" rel="noreferrer" className="flex items-center gap-2 text-primary hover:text-accent hover:drop-shadow-[0_0_8px_var(--accent)] hover:-translate-y-[1px] transition-all">
+            <span className="font-mono text-sm hidden sm:inline">GitHub</span>
             <Github size={24} />
           </a>
         </div>
       </nav>
 
       {/* 2. HERO SECTION */}
-      <section className="flex-1 flex flex-col md:flex-row items-center justify-center px-6 lg:px-12 py-20 gap-16 max-w-7xl mx-auto w-full">
+      <section className="flex-1 flex flex-col md:flex-row items-center justify-between px-6 lg:px-12 py-20 gap-16 max-w-7xl mx-auto w-full flex-hero">
         
-        {/* Left Side: Animated ASCII Preview */}
-        <div className="w-full md:w-[400px] h-[300px] bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl relative p-6 shadow-card-hover flex flex-col overflow-hidden group">
-          <div className="scanlines-green opacity-50" />
-          <pre className="font-mono text-primary text-[24px] leading-tight flex-1 flex items-center justify-center text-center animate-glitch group-hover:animate-none transition-all">
-            {asciiFrames[frame]}
-          </pre>
-          <div className="absolute bottom-4 right-4 text-primary font-mono animate-blink">_</div>
-        </div>
-
-        {/* Right Side: Text & CTA */}
-        <div className="flex-1 flex flex-col items-start gap-6 animate-slide-up">
+        {/* Left Side: Text & CTA */}
+        <div className="flex-1 flex flex-col items-start gap-6 animate-slide-up order-2 md:order-1">
           <div className="flex flex-wrap gap-3">
             <span className="bg-[#1a1a1a] rounded-full px-3 py-1 text-xs font-mono flex items-center gap-2">
               <span className="text-warning">⚡</span> &lt;30ms
@@ -90,6 +83,14 @@ export const LandingScreen: React.FC = () => {
             <button onClick={() => navigate('/about')} className="btn-secondary flex items-center justify-center gap-2">
               ▼ WATCH DEMO
             </button>
+          </div>
+        </div>
+
+        {/* Right Side: Hero Image */}
+        <div className="w-full md:w-[45%] relative order-1 md:order-2 group">
+          <div className="relative rounded-[16px] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
+            <img src={heroImg} alt="Hero" className="w-full h-auto object-cover hero-image" />
+            <div className="absolute inset-0 bg-[radial-gradient(rgba(199,167,93,0.2),transparent_70%)] mix-blend-screen pointer-events-none"></div>
           </div>
         </div>
       </section>

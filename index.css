@@ -168,6 +168,47 @@
   ::-webkit-scrollbar-thumb {
     @apply bg-border rounded hover:bg-primary transition-colors;
   }
+
+  /* Hero Section Split Layout */
+  .flex-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  @media (max-width: 768px) {
+    .flex-hero {
+      flex-direction: column;
+    }
+    .flex-hero .order-1 {
+      order: 1;
+    }
+    .flex-hero .order-2 {
+      order: 2;
+    }
+  }
+
+  .hero-image {
+    width: 100%;
+    object-fit: cover;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+
+  .hero-image-wrapper {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .hero-image-wrapper::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(rgba(199,167,93,0.2), transparent 70%);
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
 }
 
 @keyframes glitch {

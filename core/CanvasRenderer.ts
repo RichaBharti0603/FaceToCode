@@ -46,37 +46,50 @@ export class CanvasRenderer {
     targetCtx.textAlign = 'center';
     targetCtx.textBaseline = 'middle';
     
-    // Royal Glow effect
-    targetCtx.shadowBlur = 6;
-    targetCtx.shadowColor = 'rgba(199, 167, 93, 0.6)';
+    if ('letterSpacing' in targetCtx) {
+      (targetCtx as any).letterSpacing = '1px';
+    }
+    
+    // Soft glow layer
+    targetCtx.shadowBlur = 5;
+    targetCtx.shadowColor = 'rgba(199, 167, 93, 0.4)';
+
+    // Subtle motion: Micro flicker (simulate CRT shimmer)
+    targetCtx.globalAlpha = Math.random() > 0.95 ? 0.85 : 1.0;
+
+    // Color Gradient Rendering (Vertical)
+    // top -> #1E3A8A, mid -> #3B82F6, highlight -> #C7A75D
+    const gradient = targetCtx.createLinearGradient(0, 0, 0, height);
+    gradient.addColorStop(0, '#1E3A8A');
+    gradient.addColorStop(0.5, '#3B82F6');
+    gradient.addColorStop(1, '#C7A75D');
+
+    if (!isColorMode) {
+      targetCtx.fillStyle = gradient;
+    } else {
+      targetCtx.fillStyle = '#ffffff';
+    }
 
     // Render ASCII Grid
     for (let x = 0; x < gridWidth; x++) {
       const xPosBase = (x + 0.5) * cellWidth;
       for (let y = 0; y < gridHeight; y++) {
-        const yPosBase = (y + 0.5) * cellHeight;
+        // Output Refinement: increase line-height slightly by scaling y-spacing
+        // This stretches the text vertically a tiny bit to increase line-height feel
+        const yPosBase = (y + 0.5) * cellHeight * 1.02;
+        
         const idx = y * gridWidth + x;
         const bVal = frame.brightness[idx];
         
         let char = chars[y][x];
         
-        // Warm tone calculation
         const normalized = bVal / 255;
-        const gammaCorrected = Math.pow(normalized, 1.1); // Gamma correction approx 1.1
         
+        // Edge emphasis: drop characters that are too dark to increase contrast around edges
+        if (normalized < 0.12 && !options.invert) continue;
+
         if (options.invert) {
-            targetCtx.fillStyle = isColorMode ? '#ffffff' : `rgba(30, 58, 138, ${1 - gammaCorrected})`;
-        } else {
-            // Mix Royal Blue and Gold for brightness
-            const blueWeight = 1 - gammaCorrected;
-            const goldWeight = gammaCorrected;
-            // Royal Blue: 30, 58, 138
-            // Royal Gold: 199, 167, 93
-            const r = Math.round(30 * blueWeight + 199 * goldWeight);
-            const g = Math.round(58 * blueWeight + 167 * goldWeight);
-            const b = Math.round(138 * blueWeight + 93 * goldWeight);
-            
-            targetCtx.fillStyle = isColorMode ? '#ffffff' : `rgb(${r}, ${g}, ${b})`;
+            targetCtx.fillStyle = isColorMode ? '#ffffff' : `rgba(30, 58, 138, ${1 - Math.pow(normalized, 1.1)})`;
         }
 
         targetCtx.fillText(char, xPosBase, yPosBase);

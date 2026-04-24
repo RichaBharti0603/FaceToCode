@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Settings, Camera, Image as ImageIcon, Info, Github } from 'lucide-react';
 
-// New Feature Views
 import { LandingScreen } from './components/LandingScreen';
 import { AsciiCanvas } from './components/AsciiCanvas';
 import { ExploreGallery } from './components/ExploreGallery';
 import { SettingsPanel } from './components/SettingsPanel';
 import { AboutTutorial } from './components/AboutTutorial';
+
+import logoImg from './assests/images/logo.png';
+
 
 import { Toaster, Toast } from './components/Toaster';
 
@@ -26,7 +28,7 @@ const Header: React.FC = () => {
           </Link>
         )}
         <div className="text-text-primary font-mono font-bold flex items-center gap-2 text-lg">
-          <span className="text-primary">FaceToCode</span>
+          <img src={logoImg} alt="FaceToCode Logo" className="h-[36px] md:h-[44px] w-auto drop-shadow-md" />
           <span className="text-text-muted">·</span>
           <span>
             {location.pathname === '/camera' ? 'Live ASCII Studio' : ''}
@@ -50,6 +52,9 @@ const Header: React.FC = () => {
         <Link to="/about" className={`btn-icon ${location.pathname === '/about' ? 'text-primary' : ''}`} title="Tutorial">
           <Info size={20} />
         </Link>
+        <a href="https://github.com/RichaBharti0603/FaceToCode" target="_blank" rel="noreferrer" className="btn-icon text-primary hover:text-accent hover:drop-shadow-[0_0_8px_var(--accent)] hover:-translate-y-[1px] transition-all" title="GitHub">
+          <Github size={20} />
+        </a>
       </nav>
     </header>
   );

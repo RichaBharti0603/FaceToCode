@@ -90,8 +90,12 @@ export class FrameProcessor {
         }
         
         const charIndex = Math.floor(normalized * charPoolLen);
+        
+        // Slight randomness for organic feel (avoid uniform blocks)
+        const randomOffset = Math.random() > 0.85 ? (Math.random() > 0.5 ? 1 : -1) : 0;
+        
         // Ensure index is within bounds
-        const safeIndex = Math.max(0, Math.min(charPoolLen, charIndex));
+        const safeIndex = Math.max(0, Math.min(charPoolLen, charIndex + randomOffset));
         row.push(charPool[safeIndex]);
         
         colorBuffer[i] = r;
